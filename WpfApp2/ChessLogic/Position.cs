@@ -54,6 +54,11 @@ public class Square
         return (first, second);
     }
 
+    // public override string ToString()
+    // {
+    //     return $"({this.coordinates.Item1}, {this.coordinates.Item2})";
+    // }
+
     public override string ToString()
     {
         char first = (char)((int)('a') + this.coordinates.Item1);
