@@ -2,7 +2,31 @@ namespace ChessInternals;
 
 public class Position
 {
-    public Position() { }
+    int halfmove;
+    Piece?[,] board;
+
+    public Position(int halfmove, Piece?[,] board)
+    {
+        this.halfmove = halfmove;
+        this.board = board;
+    }
+
+    public List<Square> GetLegalMoves(Square c)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public class Piece
+{
+    PieceType type;
+    Color color;
+
+    public Piece(PieceType t, Color c)
+    {
+        this.type = t;
+        this.color = c;
+    }
 }
 
 public class Square
@@ -53,11 +77,6 @@ public class Square
 
         return (first, second);
     }
-
-    // public override string ToString()
-    // {
-    //     return $"({this.coordinates.Item1}, {this.coordinates.Item2})";
-    // }
 
     public override string ToString()
     {
@@ -119,11 +138,11 @@ public class PieceTypeFuncs
             if (i == 1 && j == 1)
                 continue;
 
-            int new_i = c.X + i - 1;
-            int new_j = c.Y + j - 1;
+            int new_x = c.X + i - 1;
+            int new_y = c.Y + j - 1;
 
-            if (AreCorrectCoords(new_i, new_j) || (i == 1 && j == 1))
-                res.Add(new Square(new_i, new_j));
+            if (AreCorrectCoords(new_x, new_y))
+                res.Add(new Square(new_x, new_y));
         }
 
         return res;
@@ -139,11 +158,11 @@ public class PieceTypeFuncs
             if (i == c.X)
                 continue;
 
-            int new_i = i;
-            int new_j = c.Y + (c.X - i) * (1 - 2 * (j % 2));
+            int new_x = i;
+            int new_y = c.Y + (c.X - i) * (1 - 2 * (j % 2));
 
-            if (AreCorrectCoords(new_i, new_j))
-                res.Add(new Square(new_i, new_j));
+            if (AreCorrectCoords(new_x, new_y))
+                res.Add(new Square(new_x, new_y));
         }
 
         return res;
@@ -152,12 +171,27 @@ public class PieceTypeFuncs
     private static List<Square> GetPossibleKnightMoves(Square c)
     {
         List<Square> res = new List<Square>();
+
+        for (int i = 0; i < 8; i++)
+        for (int j = 0; j < 8; j++)
+        {
+            int x_diff = Math.Abs(c.X - i);
+            int y_diff = Math.Abs(c.Y - j);
+
+            if (Math.Abs(x_diff - y_diff) == 1 && Math.Min(x_diff, y_diff) == 1)
+                res.Add(new Square(i, j));
+        }
+
         return res;
     }
 
     private static List<Square> GetPossibleRookMoves(Square c)
     {
         List<Square> res = new List<Square>();
+        for (int i = 0; i < 8; i++)
+        for (int j = 0; j < 8; j++)
+            if ((i == c.X || j == c.Y) && !(i == c.X && j == c.Y))
+                res.Add(new Square(i, j));
         return res;
     }
 
