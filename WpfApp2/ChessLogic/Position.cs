@@ -163,6 +163,7 @@ public class PieceTypeFuncs
 
             if (AreCorrectCoords(new_x, new_y))
                 res.Add(new Square(new_x, new_y));
+
         }
 
         return res;
@@ -181,17 +182,19 @@ public class PieceTypeFuncs
             if (Math.Abs(x_diff - y_diff) == 1 && Math.Min(x_diff, y_diff) == 1)
                 res.Add(new Square(i, j));
         }
-
+      
         return res;
     }
 
     private static List<Square> GetPossibleRookMoves(Square c)
     {
         List<Square> res = new List<Square>();
+
         for (int i = 0; i < 8; i++)
         for (int j = 0; j < 8; j++)
             if ((i == c.X || j == c.Y) && !(i == c.X && j == c.Y))
                 res.Add(new Square(i, j));
+      
         return res;
     }
 
