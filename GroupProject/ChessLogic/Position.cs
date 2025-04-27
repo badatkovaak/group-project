@@ -2,30 +2,196 @@ namespace ChessInternals;
 
 public class Position
 {
-    int halfmove;
     Piece?[,] board;
+    int moves;
+    int halfmovesFromPawnMoveOrCapture;
+    Color colorToMove;
+    (bool, bool, bool, bool) castling;
+    Square? enPassant;
 
-    public Position(int halfmove, Piece?[,] board)
+    public Position(
+        Piece?[,] board,
+        int moves,
+        int halfmoves,
+        Color c,
+        (bool, bool, bool, bool) castling,
+        Square? enPassant
+    )
     {
-        this.halfmove = halfmove;
+        if (board.Rank != 2 || board.GetLength(0) != 8 || board.GetLength(1) != 8)
+            throw new ArgumentException();
+
         this.board = board;
+        this.moves = moves;
+        this.halfmovesFromPawnMoveOrCapture = halfmoves;
+        this.colorToMove = c;
+        this.castling = castling;
+        this.enPassant = enPassant;
     }
 
-    public List<Square> GetLegalMoves(Square c)
+    public Position MakeAMove(Move m)
     {
-        throw new NotImplementedException();
+        return this.MakeAMove(m.start, m.end);
+    }
+
+    public Position MakeAMove(Square start, Square end)
+    {
+        this.board[end.X, end.Y] = this.board[start.X, start.Y];
+        this.board[start.X, start.Y] = null;
+
+        if (this.colorToMove == Color.Black)
+            this.moves++;
+
+        this.colorToMove = ColorFuncs.Opposite(this.colorToMove);
+
+        return this;
+    }
+
+    public List<Square>? GetLegalMoves(Square c)
+    {
+        Piece? p = GetPieceOnSquare(c);
+
+        if (p is null)
+            return null;
+
+        List<Square> l = PieceTypeFuncs.GetTypesPossibleMoves(c, p.type);
+        foreach (var item in l)
+            Console.WriteLine(item);
+
+        return l;
+    }
+
+    private List<Square>? GetBishopLegalMoves(Square c)
+    {
+        Piece? bishop = GetPieceOnSquare(c);
+
+        if (bishop is null)
+            return null;
+
+        bool isNotAProperType = bishop.type != PieceType.Bishop && bishop.type != PieceType.Queen;
+
+        if (isNotAProperType)
+            return null;
+
+        List<Square> moves = PieceTypeFuncs.GetTypesPossibleMoves(c, bishop.type);
+        List<Square> res = new List<Square>();
+
+        foreach (Square move in moves)
+        {
+            int start_x = c.X;
+            int step = (start_x - move.X) / Math.Abs(start_x - move.X);
+            bool isPossible = true;
+
+            for (int i = start_x; i < move.X; i += step)
+            {
+                Piece? p = this.board[i, c.Y + (i - start_x)];
+
+                if (p is null)
+                    continue;
+
+                if (p.color == bishop.color)
+                {
+                    isPossible = false;
+                    break;
+                }
+            }
+
+            if (isPossible)
+                res.Add(move);
+        }
+
+        return moves;
+    }
+
+    public List<Square>? GetKnightLegalMoves(Square c)
+    {
+        Piece? knight = GetPieceOnSquare(c);
+
+        if (knight is null)
+            return null;
+
+        if (knight.type != PieceType.Knight)
+            return null;
+
+        List<Square> moves = PieceTypeFuncs.GetTypesPossibleMoves(c, knight.type);
+        List<Square> res = new List<Square>();
+
+        foreach (Square move in moves)
+        {
+            Piece? p = GetPieceOnSquare(move);
+
+            if (p is null || p.color != knight.color)
+            {
+                res.Add(move);
+                continue;
+            }
+        }
+
+        return res;
+    }
+
+    public Piece? GetPieceOnSquare(Square c)
+    {
+        return this.board[c.X, c.Y];
+    }
+
+    public bool IsWhiteToMove()
+    {
+        return this.colorToMove == Color.White;
+    }
+
+    public override string ToString()
+    {
+        string res = "\n";
+        res += Piece.PieceArrayToString(this.board);
+        res += $"Move - {this.moves}, Color To Move - {this.colorToMove}\n\n";
+        return res;
+    }
+}
+
+public class Move
+{
+    public Square start;
+    public Square end;
+
+    public Move(Square start, Square end)
+    {
+        this.start = start;
+        this.end = end;
     }
 }
 
 public class Piece
 {
-    PieceType type;
-    Color color;
+    public readonly PieceType type;
+    public readonly Color color;
 
     public Piece(PieceType t, Color c)
     {
         this.type = t;
         this.color = c;
+    }
+
+    public static string PieceArrayToString(Piece?[,] array)
+    {
+        string res = "";
+
+        for (int j = array.GetLength(1) - 1; j >= 0; j--)
+        {
+            for (int i = 0; i < array.GetLength(0); i++)
+            {
+                Piece? p = array[i, j];
+
+                if (p is null)
+                    res += "- ";
+                else
+                    res += PieceTypeFuncs.ToString(p.type, p.color) + " ";
+            }
+
+            res += "\n";
+        }
+
+        return res;
     }
 }
 
@@ -48,6 +214,11 @@ public class Square
         this.coordinates = (i, j);
     }
 
+    public Square((int, int) coords)
+    {
+        this.coordinates = coords;
+    }
+
     public Square(string input)
     {
         (int, int)? c = ConvertStringToCoordinates(input);
@@ -56,6 +227,16 @@ public class Square
             throw new Exception();
 
         this.coordinates = ((int, int))c;
+        // this.coordinates.Item2 = 7 - this.coordinates.Item2
+    }
+
+    public static Square? StringToSquare(string input)
+    {
+        (int, int)? coords = ConvertStringToCoordinates(input);
+        if (coords is null)
+            return null;
+
+        return new Square(((int, int))coords);
     }
 
     public static (int, int)? ConvertStringToCoordinates(string input)
@@ -101,17 +282,50 @@ public enum PieceType
 
 public class PieceTypeFuncs
 {
-    public static PieceType? FromChar(char c)
+    public static (PieceType, Color)? FromChar(char c)
     {
-        return c switch
+        Color color = Color.White;
+
+        if (((int)c & 32) > 0)
+            color = Color.Black;
+
+        c = (char)((int)c | 0b00100000);
+        // Console.WriteLine($"c is - {c}, {color}");
+
+        PieceType? t = c switch
         {
             'k' => PieceType.King,
             'q' => PieceType.Queen,
             'r' => PieceType.Rook,
             'b' => PieceType.Bishop,
             'n' => PieceType.Knight,
+            'p' => PieceType.Pawn,
             _ => null,
         };
+
+        if (t is null)
+            return null;
+
+        return ((PieceType)t, color);
+    }
+
+    public static string ToString(PieceType t, Color c = Color.White)
+    {
+        char res = t switch
+        {
+            PieceType.King => 'k',
+            PieceType.Queen => 'q',
+            PieceType.Rook => 'r',
+            PieceType.Bishop => 'b',
+            PieceType.Knight => 'n',
+            PieceType.Pawn => 'p',
+            _ => 'e',
+        };
+
+        if (c == Color.White)
+            res = (char)((int)res & 0b11011111);
+
+        return $"{res}";
     }
 
     public static List<Square> GetTypesPossibleMoves(Square c, PieceType t)
@@ -163,7 +377,6 @@ public class PieceTypeFuncs
 
             if (AreCorrectCoords(new_x, new_y))
                 res.Add(new Square(new_x, new_y));
-
         }
 
         return res;
@@ -182,7 +395,7 @@ public class PieceTypeFuncs
             if (Math.Abs(x_diff - y_diff) == 1 && Math.Min(x_diff, y_diff) == 1)
                 res.Add(new Square(i, j));
         }
-      
+
         return res;
     }
 
@@ -194,7 +407,7 @@ public class PieceTypeFuncs
         for (int j = 0; j < 8; j++)
             if ((i == c.X || j == c.Y) && !(i == c.X && j == c.Y))
                 res.Add(new Square(i, j));
-      
+
         return res;
     }
 
@@ -226,11 +439,123 @@ public class ColorFuncs
 {
     public static Color? FromChar(char c)
     {
-        return (char)(((int)c) & 0xdf) switch
+        return (char)(((int)c) | 0b00100000) switch
         {
             'b' => Color.Black,
             'w' => Color.White,
             _ => null,
         };
+    }
+
+    public static Color Opposite(Color c)
+    {
+        return c switch
+        {
+            Color.Black => Color.White,
+            Color.White => Color.Black,
+            _ => throw new Exception(),
+        };
+    }
+}
+
+public class FEN
+{
+    public static Position? PositionFromFEN(string input)
+    {
+        string[] parts = input.Split(' ');
+
+        if (parts.Length < 6)
+            return null;
+
+        Piece?[,]? board = GetBoardFromFEN(parts[0]);
+
+        if (board is null)
+            return null;
+
+        Color? c = GetColorFromFEN(parts[1]);
+
+        if (c is null)
+            return null;
+
+        (bool, bool, bool, bool) castling = GetCastlingFromFEN(parts[2]);
+
+        Square? enPassant = GetEnPassantFromFEN(parts[3]);
+
+        int halfmoves;
+        int moves;
+
+        try
+        {
+            halfmoves = Convert.ToInt32(parts[4]);
+            moves = Convert.ToInt32(parts[5]);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return null;
+        }
+
+        return new Position(board, moves, halfmoves, (Color)c, castling, enPassant);
+    }
+
+    private static Piece?[,]? GetBoardFromFEN(string input)
+    {
+        string[] rows = input.Split('/');
+
+        if (rows.Length != 8)
+            return null;
+
+        Piece?[,] pieces = new Piece?[8, 8];
+
+        for (int i = 0; i < rows.Length; i++)
+        {
+            int j = 0;
+
+            for (int k = 0; k < rows[i].Length; k++)
+            {
+                char c = rows[i][k];
+
+                if (c >= '1' && c <= '8')
+                    j += (int)c - (int)'0';
+                else
+                {
+                    (PieceType, Color)? a = PieceTypeFuncs.FromChar(c);
+
+                    if (a is null)
+                        return null;
+
+                    var b = ((PieceType, Color))a;
+
+                    pieces[j, 7 - i] = new Piece(b.Item1, b.Item2);
+
+                    j += 1;
+                }
+            }
+
+            if (j < 8)
+                return null;
+        }
+
+        return pieces;
+    }
+
+    private static Color? GetColorFromFEN(string input)
+    {
+        return ColorFuncs.FromChar(input[0]);
+    }
+
+    private static (bool, bool, bool, bool) GetCastlingFromFEN(string input)
+    {
+        return (
+            input.IndexOf('K') >= 0,
+            input.IndexOf('Q') >= 0,
+            input.IndexOf('k') >= 0,
+            input.IndexOf('q') >= 0
+        );
+    }
+
+    private static Square? GetEnPassantFromFEN(string input)
+    {
+        return Square.StringToSquare(input);
     }
 }
