@@ -8,6 +8,7 @@ namespace ChessHandlers
         private (int x, int y)? selectedSquare = null;
         private Rectangle selectionHighlight;
         private List<Rectangle> moveHighlights = new List<Rectangle>();
+
         public MainWindow()
         {
             InitializeComponent();
@@ -22,7 +23,7 @@ namespace ChessHandlers
                 Height = 100,
                 Stroke = Brushes.Yellow,
                 StrokeThickness = 3,
-                Fill = Brushes.Transparent
+                Fill = Brushes.Transparent,
             };
         }
 
@@ -42,7 +43,7 @@ namespace ChessHandlers
                     selectedSquare = (x, y);
                     ShowSelection(x, y);
                     // заглушка: возможные ходы
-                    var moves = new[] { (x + 1, y + 1), };
+                    var moves = new[] { (x + 1, y + 1) };
                     ShowPossibleMoves(moves);
                 }
             }
@@ -58,7 +59,6 @@ namespace ChessHandlers
                 ClearSelection();
                 selectedSquare = null;
             }
-
         }
 
         private void ShowSelection(int x, int y)
@@ -67,11 +67,13 @@ namespace ChessHandlers
             Canvas.SetTop(selectionHighlight, y * 100);
             ChessBoard.Children.Add(selectionHighlight);
         }
+
         private void ClearSelection()
         {
             ChessBoard.Children.Remove(selectionHighlight);
             ClearPossibleMoves();
         }
+
         private void ShowPossibleMoves((int x, int y)[] moves)
         {
             ClearPossibleMoves();
@@ -83,7 +85,7 @@ namespace ChessHandlers
                     Width = 100,
                     Height = 100,
                     Fill = Brushes.LightGreen,
-                    Opacity = 0.5
+                    Opacity = 0.5,
                 };
                 Canvas.SetLeft(highlight, move.x * 100);
                 Canvas.SetTop(highlight, move.y * 100);
@@ -91,6 +93,7 @@ namespace ChessHandlers
                 moveHighlights.Add(highlight);
             }
         }
+
         private void ClearPossibleMoves()
         {
             foreach (var highlight in moveHighlights)
@@ -100,5 +103,4 @@ namespace ChessHandlers
             moveHighlights.Clear();
         }
     }
-
 }
