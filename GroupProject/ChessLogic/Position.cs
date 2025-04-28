@@ -47,49 +47,86 @@ public class Position
         return this;
     }
 
-    public List<Square>? GetLegalMoves(Square c)
+    public List<Square> GetLegalMoves(Square c)
     {
         Piece? p = GetPieceOnSquare(c);
 
         if (p is null)
-            return null;
+            return new List<Square>();
 
-        List<Square> l = PieceTypeFuncs.GetTypesPossibleMoves(c, p.type);
-        foreach (var item in l)
-            Console.WriteLine(item);
+        if (p.color != this.colorToMove)
+            return new List<Square>();
 
-        return l;
+        return p.type switch
+        {
+            PieceType.Queen => this.GetQueenLegalMoves(c),
+            PieceType.Rook => this.GetRookLegalMoves(c),
+            PieceType.Bishop => this.GetBishopLegalMoves(c),
+            PieceType.Knight => this.GetKnightLegalMoves(c),
+            _ => throw new NotImplementedException(),
+        };
     }
 
-    private List<Square>? GetBishopLegalMoves(Square c)
+    private List<Square> GetKingLegalMoves(Square c)
     {
-        Piece? bishop = GetPieceOnSquare(c);
+        Piece? king = GetPieceOnSquare(c);
 
-        if (bishop is null)
-            return null;
+        if (king is null)
+            return new List<Square>();
 
-        bool isNotAProperType = bishop.type != PieceType.Bishop && bishop.type != PieceType.Queen;
+        List<Square> moves = PieceTypeFuncs.GetTypesPossibleMoves(c, PieceType.King);
+        List<Square> res = new List<Square>();
 
-        if (isNotAProperType)
-            return null;
+        return res;
+    }
 
-        List<Square> moves = PieceTypeFuncs.GetTypesPossibleMoves(c, bishop.type);
+    private List<Square> GetQueenLegalMoves(Square c)
+    {
+        List<Square> l = this.GetRookLegalMoves(c);
+        return new List<Square>(l.Concat(this.GetBishopLegalMoves(c)));
+    }
+
+    private List<Square> GetRookLegalMoves(Square c)
+    {
+        Piece? rook = GetPieceOnSquare(c);
+
+        if (rook is null)
+            return new List<Square>();
+
+        List<Square> moves = PieceTypeFuncs.GetTypesPossibleMoves(c, PieceType.Rook);
         List<Square> res = new List<Square>();
 
         foreach (Square move in moves)
         {
-            int start_x = c.X;
-            int step = (start_x - move.X) / Math.Abs(start_x - move.X);
+            int x = c.X;
+            int y = c.Y;
+            int step_x;
+            int step_y;
+
+            if (c.X == move.X)
+            {
+                step_x = 0;
+                step_y = (move.Y - c.Y) / Math.Abs(move.Y - c.Y);
+            }
+            else
+            {
+                step_x = (move.X - c.X) / Math.Abs(move.X - c.X);
+                step_y = 0;
+            }
+
             bool isPossible = true;
 
-            for (int i = start_x; i < move.X; i += step)
+            for (int i = 1; Math.Abs(x - move.X) + Math.Abs(y - move.Y) > 0; i++)
             {
-                Piece? p = this.board[i, c.Y + (i - start_x)];
+                x += step_x;
+                y += step_y;
+
+                Piece? p = this.board[x, y];
 
                 if (p is null)
                     continue;
 
-                if (p.color == bishop.color)
+                if (p.color == rook.color)
                 {
                     isPossible = false;
                     break;
@@ -100,18 +137,64 @@ public class Position
                 res.Add(move);
         }
 
-        return moves;
+        return res;
     }
 
-    public List<Square>? GetKnightLegalMoves(Square c)
+    private List<Square> GetBishopLegalMoves(Square c)
+    {
+        Piece? bishop = this.GetPieceOnSquare(c);
+
+        if (bishop is null)
+            return new List<Square>();
+
+        List<Square> moves = PieceTypeFuncs.GetTypesPossibleMoves(c, PieceType.Bishop);
+        List<Square> res = new List<Square>();
+
+        foreach (Square move in moves)
+        {
+            // int x = c.X;
+            // int y = c.Y;
+            int step_x = (move.X - c.X) / Math.Abs(move.X - c.X);
+            int step_y = (move.Y - c.Y) / Math.Abs(move.Y - c.Y);
+            bool isPossible = true;
+            // Console.WriteLine($"{c}, {move}, step - {step_x} {step_y}");
+
+            for (int i = c.X + step_x; (move.X - i) * step_x >= 0; i += step_x)
+            {
+                // Console.WriteLine($"{c}, {move}, pos - ({i}, {c.Y + Math.Abs(i - c.X) * step_y})");
+                Piece? p = this.board[i, c.Y + Math.Abs(i - c.X) * step_y];
+                // Piece? p = this.GetPieceOnSquare(new Square(i, c.Y + Math.Abs(i - c.X)*step_y));
+                // Console.WriteLine($"p is - {p} {p?.type} {p?.color} {bishop.color}");
+
+                if (p is null)
+                    continue;
+
+                if (p.color == bishop.color)
+                {
+                    isPossible = false;
+                    break;
+                }
+
+                if ((move.X - i) * step_x > 0)
+                {
+                    isPossible = false;
+                    break;
+                }
+            }
+
+            if (isPossible)
+                res.Add(move);
+        }
+
+        return res;
+    }
+
+    private List<Square> GetKnightLegalMoves(Square c)
     {
         Piece? knight = GetPieceOnSquare(c);
 
         if (knight is null)
-            return null;
-
-        if (knight.type != PieceType.Knight)
-            return null;
+            return new List<Square>();
 
         List<Square> moves = PieceTypeFuncs.GetTypesPossibleMoves(c, knight.type);
         List<Square> res = new List<Square>();
@@ -142,9 +225,9 @@ public class Position
 
     public override string ToString()
     {
-        string res = "\n";
+        string res = "";
         res += Piece.PieceArrayToString(this.board);
-        res += $"Move - {this.moves}, Color To Move - {this.colorToMove}\n\n";
+        res += $"Move - {this.moves}, Color To Move - {this.colorToMove}\n";
         return res;
     }
 }
@@ -328,7 +411,11 @@ public class PieceTypeFuncs
         return $"{res}";
     }
 
-    public static List<Square> GetTypesPossibleMoves(Square c, PieceType t)
+    public static List<Square> GetTypesPossibleMoves(
+        Square c,
+        PieceType t,
+        Color color = Color.White
+    )
     {
         return t switch
         {
@@ -337,7 +424,7 @@ public class PieceTypeFuncs
             PieceType.Rook => GetPossibleRookMoves(c),
             PieceType.Bishop => GetPossibleBishopMoves(c),
             PieceType.Knight => GetPossibleKnightMoves(c),
-            PieceType.Pawn => GetPossiblePawnMoves(c),
+            PieceType.Pawn => GetPossiblePawnMoves(c, color),
             _ => throw new Exception(),
         };
     }
@@ -417,9 +504,24 @@ public class PieceTypeFuncs
         return new List<Square>(res.Concat(GetPossibleRookMoves(c)));
     }
 
-    private static List<Square> GetPossiblePawnMoves(Square c)
+    private static List<Square> GetPossiblePawnMoves(Square c, Color color)
     {
         List<Square> res = new List<Square>();
+
+        int step = 1;
+
+        if (color == Color.Black)
+            step = -1;
+
+        for (int i = 0; i < 3; i++)
+        {
+            int x = c.X + i - 1;
+            int y = c.Y + step;
+
+            if (PieceTypeFuncs.AreCorrectCoords(x, y))
+                res.Add(new Square(x, y));
+        }
+
         return res;
     }
 
