@@ -29,13 +29,21 @@ public class Position
         this.enPassant = enPassant;
     }
 
-    public Position MakeAMove(Move m)
+    public Position? MakeAMove(Move m)
     {
         return this.MakeAMove(m.start, m.end);
     }
 
-    public Position MakeAMove(Square start, Square end)
+    public Position? MakeAMove(Square start, Square end)
     {
+        List<Square> l = GetLegalMoves(start);
+
+        foreach (Square s in l)
+            Console.WriteLine(s);
+
+        if (!l.Contains(end))
+            return null;
+
         this.board[end.X, end.Y] = this.board[start.X, start.Y];
         this.board[start.X, start.Y] = null;
 
@@ -59,10 +67,12 @@ public class Position
 
         return p.type switch
         {
+            PieceType.King => this.GetKingLegalMoves(c),
             PieceType.Queen => this.GetQueenLegalMoves(c),
             PieceType.Rook => this.GetRookLegalMoves(c),
             PieceType.Bishop => this.GetBishopLegalMoves(c),
             PieceType.Knight => this.GetKnightLegalMoves(c),
+            PieceType.Pawn => this.GetPawnLegalMoves(c),
             _ => throw new NotImplementedException(),
         };
     }
@@ -76,6 +86,20 @@ public class Position
 
         List<Square> moves = PieceTypeFuncs.GetTypesPossibleMoves(c, PieceType.King);
         List<Square> res = new List<Square>();
+
+        foreach (Square move in moves)
+        {
+            Piece? p = GetPieceOnSquare(move);
+
+            if (p is null)
+            {
+                res.Add(move);
+                continue;
+            }
+
+            if (p.color != king.color)
+                res.Add(move);
+        }
 
         return res;
     }
@@ -152,19 +176,13 @@ public class Position
 
         foreach (Square move in moves)
         {
-            // int x = c.X;
-            // int y = c.Y;
             int step_x = (move.X - c.X) / Math.Abs(move.X - c.X);
             int step_y = (move.Y - c.Y) / Math.Abs(move.Y - c.Y);
             bool isPossible = true;
-            // Console.WriteLine($"{c}, {move}, step - {step_x} {step_y}");
 
             for (int i = c.X + step_x; (move.X - i) * step_x >= 0; i += step_x)
             {
-                // Console.WriteLine($"{c}, {move}, pos - ({i}, {c.Y + Math.Abs(i - c.X) * step_y})");
                 Piece? p = this.board[i, c.Y + Math.Abs(i - c.X) * step_y];
-                // Piece? p = this.GetPieceOnSquare(new Square(i, c.Y + Math.Abs(i - c.X)*step_y));
-                // Console.WriteLine($"p is - {p} {p?.type} {p?.color} {bishop.color}");
 
                 if (p is null)
                     continue;
@@ -213,6 +231,30 @@ public class Position
         return res;
     }
 
+    private List<Square> GetPawnLegalMoves(Square c)
+    {
+        Piece? pawn = GetPieceOnSquare(c);
+
+        if (pawn is null)
+            return new List<Square>();
+
+        List<Square> moves = PieceTypeFuncs.GetTypesPossibleMoves(c, PieceType.Pawn, pawn.color);
+        List<Square> res = new List<Square>();
+
+        foreach (Square move in moves)
+        {
+            Piece? p = GetPieceOnSquare(move);
+
+            if (move.X == c.X && p is null)
+                res.Add(move);
+
+            if (move.X != c.X && p is not null && p.color != pawn.color)
+                res.Add(move);
+        }
+
+        return res;
+    }
+
     public Piece? GetPieceOnSquare(Square c)
     {
         return this.board[c.X, c.Y];
@@ -226,7 +268,22 @@ public class Position
     public override string ToString()
     {
         string res = "";
-        res += Piece.PieceArrayToString(this.board);
+
+        for (int j = 7; j >= 0; j--)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                Piece? p = this.board[i, j];
+
+                if (p is null)
+                    res += "- ";
+                else
+                    res += p.ToString() + " ";
+            }
+
+            res += "\n";
+        }
+
         res += $"Move - {this.moves}, Color To Move - {this.colorToMove}\n";
         return res;
     }
@@ -255,30 +312,27 @@ public class Piece
         this.color = c;
     }
 
-    public static string PieceArrayToString(Piece?[,] array)
+    public override string ToString()
     {
-        string res = "";
-
-        for (int j = array.GetLength(1) - 1; j >= 0; j--)
+        char res = this.type switch
         {
-            for (int i = 0; i < array.GetLength(0); i++)
-            {
-                Piece? p = array[i, j];
+            PieceType.King => 'k',
+            PieceType.Queen => 'q',
+            PieceType.Rook => 'r',
+            PieceType.Bishop => 'b',
+            PieceType.Knight => 'n',
+            PieceType.Pawn => 'p',
+            _ => 'e',
+        };
 
-                if (p is null)
-                    res += "- ";
-                else
-                    res += PieceTypeFuncs.ToString(p.type, p.color) + " ";
-            }
+        if (this.color == Color.White)
+            res = (char)((int)res & 0b11011111);
 
-            res += "\n";
-        }
-
-        return res;
+        return $"{res}";
     }
 }
 
-public class Square
+public class Square : IEquatable<Square>
 {
     (int, int) coordinates;
 
@@ -310,7 +364,6 @@ public class Square
             throw new Exception();
 
         this.coordinates = ((int, int))c;
-        // this.coordinates.Item2 = 7 - this.coordinates.Item2
     }
 
     public static Square? StringToSquare(string input)
@@ -340,6 +393,32 @@ public class Square
         int second = (int)(input[1] - '1');
 
         return (first, second);
+    }
+
+    public bool Equals(Square? s)
+    {
+        if (s is null)
+            return false;
+
+        return (s.X == this.X) && (s.Y == this.Y);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is null)
+            return false;
+
+        Square? s = obj as Square;
+
+        if (s is null)
+            return false;
+
+        return this.Equals(s);
+    }
+
+    public override int GetHashCode()
+    {
+        return Convert.ToInt32(Math.Pow(2, this.X) * Math.Pow(3, this.Y));
     }
 
     public override string ToString()
@@ -373,7 +452,6 @@ public class PieceTypeFuncs
             color = Color.Black;
 
         c = (char)((int)c | 0b00100000);
-        // Console.WriteLine($"c is - {c}, {color}");
 
         PieceType? t = c switch
         {
@@ -390,25 +468,6 @@ public class PieceTypeFuncs
             return null;
 
         return ((PieceType)t, color);
-    }
-
-    public static string ToString(PieceType t, Color c = Color.White)
-    {
-        char res = t switch
-        {
-            PieceType.King => 'k',
-            PieceType.Queen => 'q',
-            PieceType.Rook => 'r',
-            PieceType.Bishop => 'b',
-            PieceType.Knight => 'n',
-            PieceType.Pawn => 'p',
-            _ => 'e',
-        };
-
-        if (c == Color.White)
-            res = (char)((int)res & 0b11011111);
-
-        return $"{res}";
     }
 
     public static List<Square> GetTypesPossibleMoves(
@@ -509,18 +568,32 @@ public class PieceTypeFuncs
         List<Square> res = new List<Square>();
 
         int step = 1;
+        int rankThatCanGoDouble = 1;
 
         if (color == Color.Black)
+        {
             step = -1;
+            rankThatCanGoDouble = 6;
+        }
+
+        Console.WriteLine($"from square {c} {color}");
 
         for (int i = 0; i < 3; i++)
         {
             int x = c.X + i - 1;
             int y = c.Y + step;
 
+            Console.WriteLine($"pawn -- {x} {y}");
+
             if (PieceTypeFuncs.AreCorrectCoords(x, y))
                 res.Add(new Square(x, y));
         }
+
+        if (c.Y == rankThatCanGoDouble)
+            res.Add(new Square(c.X, c.Y + 2 * step));
+
+        foreach (Square s in res)
+            Console.WriteLine(s);
 
         return res;
     }
