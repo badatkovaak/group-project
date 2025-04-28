@@ -6,7 +6,128 @@
         xmlns:local="clr-namespace:WpfApp2"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
-    <Grid>
+<Grid MouseLeftButtonDown="MouseLeftButtonDown">
+    <Canvas Name="ChessBoard" MouseLeftButtonDown="MouseLeftButtonDown">
+        <Canvas Name="BoardCanvas" Width="800" Height="800">
+            <Canvas.Resources>
+                <Style TargetType="Rectangle">
+                    <Setter Property="Width" Value="100"/>
+                    <Setter Property="Height" Value="100"/>
+                </Style>
+            </Canvas.Resources>
+            <Canvas x:Name="Board">
+                <Canvas.Background>
+                    <SolidColorBrush Color="Beige"/>
+                </Canvas.Background>
+                <Rectangle Canvas.Left="0" Canvas.Top="0" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="100" Canvas.Top="0" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="200" Canvas.Top="0" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="300" Canvas.Top="0" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="400" Canvas.Top="0" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="500" Canvas.Top="0" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="600" Canvas.Top="0" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="700" Canvas.Top="0" Fill="#FF4B3824"/>
 
-    </Grid>
+                <Rectangle Canvas.Left="0" Canvas.Top="100" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="100" Canvas.Top="100" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="200" Canvas.Top="100" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="300" Canvas.Top="100" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="400" Canvas.Top="100" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="500" Canvas.Top="100" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="600" Canvas.Top="100" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="700" Canvas.Top="100" Fill="#FFF7DBAE"/>
+
+                <Rectangle Canvas.Left="0" Canvas.Top="200" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="100" Canvas.Top="200" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="200" Canvas.Top="200" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="300" Canvas.Top="200" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="400" Canvas.Top="200" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="500" Canvas.Top="200" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="600" Canvas.Top="200" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="700" Canvas.Top="200" Fill="#FF4B3824"/>
+
+                <Rectangle Canvas.Left="0" Canvas.Top="300" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="100" Canvas.Top="300" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="200" Canvas.Top="300" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="300" Canvas.Top="300" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="400" Canvas.Top="300" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="500" Canvas.Top="300" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="600" Canvas.Top="300" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="700" Canvas.Top="300" Fill="#FFF7DBAE"/>
+
+                <Rectangle Canvas.Left="0" Canvas.Top="400" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="100" Canvas.Top="400" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="200" Canvas.Top="400" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="300" Canvas.Top="400" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="400" Canvas.Top="400" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="500" Canvas.Top="400" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="600" Canvas.Top="400" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="700" Canvas.Top="400" Fill="#FF4B3824"/>
+
+                <Rectangle Canvas.Left="0" Canvas.Top="500" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="100" Canvas.Top="500" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="200" Canvas.Top="500" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="300" Canvas.Top="500" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="400" Canvas.Top="500" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="500" Canvas.Top="500" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="600" Canvas.Top="500" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="700" Canvas.Top="500" Fill="#FFF7DBAE"/>
+
+                <Rectangle Canvas.Left="0" Canvas.Top="600" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="100" Canvas.Top="600" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="200" Canvas.Top="600" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="300" Canvas.Top="600" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="400" Canvas.Top="600" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="500" Canvas.Top="600" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="600" Canvas.Top="600" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="700" Canvas.Top="600" Fill="#FF4B3824"/>
+
+                <Rectangle Canvas.Left="0" Canvas.Top="700" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="100" Canvas.Top="700" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="200" Canvas.Top="700" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="300" Canvas.Top="700" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="400" Canvas.Top="700" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="500" Canvas.Top="700" Fill="#FFF7DBAE"/>
+                <Rectangle Canvas.Left="600" Canvas.Top="700" Fill="#FF4B3824"/>
+                <Rectangle Canvas.Left="700" Canvas.Top="700" Fill="#FFF7DBAE"/>
+            </Canvas>
+        </Canvas>
+        <Image Name="BlackRoot" Width="100" Height="100" Canvas.Left="0" Canvas.Top="0" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\rook_black.png"/>
+        <Image Name="BlackKnight" Width="100" Height="100" Canvas.Left="100" Canvas.Top="0" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\knight_black.png"/>
+        <Image Name="BlackBishop" Width="100" Height="100" Canvas.Left="200" Canvas.Top="0" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\bishop_black.png"/>
+        <Image Name="BlackQueen" Width="100" Height="100" Canvas.Left="300" Canvas.Top="0" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\queen_black.png"/>
+        <Image Name="BlackKing" Width="100" Height="100" Canvas.Left="400" Canvas.Top="0" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\king_black.png"/>
+        <Image Name="BlackBishop2" Width="100" Height="100" Canvas.Left="500" Canvas.Top="0" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\bishop_black.png"/>
+        <Image Name="BlackKnight2" Width="100" Height="100" Canvas.Left="600" Canvas.Top="0" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\knight_black.png"/>
+        <Image Name="BlackRoot2" Width="100" Height="100" Canvas.Left="700" Canvas.Top="0" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\rook_black.png"/>
+
+        <Image Width="100" Height="100" Canvas.Left="0" Canvas.Top="100" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\pawn_black.png"/>
+        <Image Width="100" Height="100" Canvas.Left="100" Canvas.Top="100" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\pawn_black.png"/>
+        <Image Width="100" Height="100" Canvas.Left="200" Canvas.Top="100" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\pawn_black.png"/>
+        <Image Width="100" Height="100" Canvas.Left="300" Canvas.Top="100" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\pawn_black.png"/>
+        <Image Width="100" Height="100" Canvas.Left="400" Canvas.Top="100" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\pawn_black.png"/>
+        <Image Width="100" Height="100" Canvas.Left="500" Canvas.Top="100" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\pawn_black.png"/>
+        <Image Width="100" Height="100" Canvas.Left="600" Canvas.Top="100" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\pawn_black.png"/>
+        <Image Width="100" Height="100" Canvas.Left="700" Canvas.Top="100" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\pawn_black.png"/>
+
+        <Image Name="WhiteRoot" Width="100" Height="100" Canvas.Left="0" Canvas.Top="700" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\rook_white.png"/>
+        <Image Name="WhiteKnight" Width="100" Height="100" Canvas.Left="100" Canvas.Top="700" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\knight_white.png"/>
+        <Image Name="WhiteBishop" Width="100" Height="100" Canvas.Left="200" Canvas.Top="700" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\bishop_white.png"/>
+        <Image Name="WhiteQueen" Width="100" Height="100" Canvas.Left="300" Canvas.Top="700" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\queen_white.png"/>
+        <Image Name="WhiteKing" Width="100" Height="100" Canvas.Left="400" Canvas.Top="700" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\king_white.png"/>
+        <Image Name="WhiteBishop2" Width="100" Height="100" Canvas.Left="500" Canvas.Top="700" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\bishop_white.png"/>
+        <Image Name="WhiteKnight2" Width="100" Height="100" Canvas.Left="600" Canvas.Top="700" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\knight_white.png"/>
+        <Image Name="WhiteRoot2" Width="100" Height="100" Canvas.Left="700" Canvas.Top="700" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\rook_white.png"/>
+
+
+        <Image Width="100" Height="100" Canvas.Left="0" Canvas.Top="600" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\pawn_white.png"/>
+        <Image Width="100" Height="100" Canvas.Left="100" Canvas.Top="600" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\pawn_white.png"/>
+        <Image Width="100" Height="100" Canvas.Left="200" Canvas.Top="600" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\pawn_white.png"/>
+        <Image Width="100" Height="100" Canvas.Left="300" Canvas.Top="600" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\pawn_white.png"/>
+        <Image Width="100" Height="100" Canvas.Left="400" Canvas.Top="600" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\pawn_white.png"/>
+        <Image Width="100" Height="100" Canvas.Left="500" Canvas.Top="600" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\pawn_white.png"/>
+        <Image Width="100" Height="100" Canvas.Left="600" Canvas.Top="600" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\pawn_white.png"/>
+        <Image Width="100" Height="100" Canvas.Left="700" Canvas.Top="600" Source="C:\Users\filat\OneDrive\Рабочий стол\05.02\sofa\Шахматы\Шахматы\Images\pawn_white.png"/>
+    </Canvas>
+</Grid>
 </Window>
