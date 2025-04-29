@@ -3,10 +3,10 @@ namespace ChessInternals;
 public class Position
 {
     Piece?[,] board;
-    int moves;
+    public int moves;
     int halfmovesFromPawnMoveOrCapture;
-    Color colorToMove;
-    (bool, bool, bool, bool) castling;
+    public Color colorToMove;
+    public (bool, bool, bool, bool) castling;
     Square? enPassant;
 
     public Position(
@@ -576,14 +576,10 @@ public class PieceTypeFuncs
             rankThatCanGoDouble = 6;
         }
 
-        Console.WriteLine($"from square {c} {color}");
-
         for (int i = 0; i < 3; i++)
         {
             int x = c.X + i - 1;
             int y = c.Y + step;
-
-            Console.WriteLine($"pawn -- {x} {y}");
 
             if (PieceTypeFuncs.AreCorrectCoords(x, y))
                 res.Add(new Square(x, y));
@@ -591,9 +587,6 @@ public class PieceTypeFuncs
 
         if (c.Y == rankThatCanGoDouble)
             res.Add(new Square(c.X, c.Y + 2 * step));
-
-        foreach (Square s in res)
-            Console.WriteLine(s);
 
         return res;
     }
