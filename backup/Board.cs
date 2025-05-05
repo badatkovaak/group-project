@@ -18,6 +18,8 @@ class Board : Canvas
     List<PieceLabel> pieces;
     Square? selectedSquare;
 
+    private List<Rectangle> highlightedSquares = new List<Rectangle>();
+
     public Board(string fen = default_fen)
     {
         this.Width = 400;
@@ -155,7 +157,46 @@ class Board : Canvas
 
     public void HighlightLegalMoves(Square s)
     {
-        return;
+        ClearHighlights();
+
+        var legalMoves = this.position.GetLegalMoves(s);
+        double squareSize = this.Width / 8;
+
+        foreach (Square move in legalMoves)
+        {
+            Rectangle highlight = new Rectangle()
+            {
+                Width = squareSize,
+                Height = squareSize,
+                Fill = new SolidColorBrush(Colors.Yellow) { Opacity = 0.4 },
+                Stroke = Brushes.Gold,
+                StrokeThickness = 2,
+                IsHitTestVisible = false
+            };
+
+            Canvas.SetLeft(highlight, move.X * squareSize);
+            Canvas.SetTop(highlight, (7 - move.Y) * squareSize);
+
+            this.highlightedSquares.Add(highlight);
+            this.Children.Add(highlight);
+
+            highlight.SetValue(Canvas.ZIndexProperty, 1);
+
+        }
+
+        foreach (var piece in this.pieces)
+        {
+            piece.SetValue(Canvas.ZIndexProperty, 2);
+        }
+    }
+    public void ClearHighlights()
+    {
+        foreach (var highlight in highlightedSquares)
+        {
+            this.Children.Remove(highlight);
+        }
+
+        highlightedSquares.Clear();
     }
 
     public void OnMouseReleased(object? sender, PointerReleasedEventArgs e)
@@ -198,17 +239,20 @@ class Board : Canvas
             if (capturedPiece.color != this.position.colorToMove)
                 return;
 
+            HighlightLegalMoves(s);
+
             this.selectedSquare = s;
             Console.WriteLine($"selected Square - {s}");
             return;
         }
 
-        if (this.selectedSquare is null)
+        if (this.selectedSquare is null)    
             throw new Exception();
 
         if (this.selectedSquare.Equals(s))
         {
             this.selectedSquare = null;
+            ClearHighlights();
             Console.WriteLine("diselected square");
             return;
         }
@@ -219,12 +263,16 @@ class Board : Canvas
 
             if (!isLegal)
             {
+                this.selectedSquare = null;
+                ClearHighlights();
                 Console.WriteLine($"trying to make an illegal move - {this.selectedSquare} {s}");
                 return;
             }
 
             Square start = this.selectedSquare;
             Square end = s;
+
+            Console.WriteLine(this.position);
 
             Position? pos = this.position.MakeAMove(start, end);
 
@@ -236,7 +284,10 @@ class Board : Canvas
 
             Console.WriteLine($"Made legal move - {start} {end}");
 
+            Console.WriteLine(this.position);
+
             this.selectedSquare = null;
+            ClearHighlights();
 
             if (capturedPiece is not null)
             {
