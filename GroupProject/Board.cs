@@ -4,9 +4,9 @@ using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
-using ChessInternals;
+using ChessLogic;
 
-namespace Backup;
+namespace Chess;
 
 class Board : Canvas
 {
@@ -59,12 +59,12 @@ class Board : Canvas
         for (int i = 0; i < 8; i++)
         for (int j = 0; j < 8; j++)
         {
-            Piece? piece = this.position.GetPieceOnSquare(new Square(i, j));
+            Piece? piece = this.position[Square.NewUnchecked(i, j)];
 
             if (piece is null)
                 continue;
 
-            PieceLabel label = new PieceLabel(piece, new Square(i, j));
+            PieceLabel label = new PieceLabel(piece, Square.NewUnchecked(i, j));
 
             this.pieces.Add(label);
             this.Children.Add(label);
@@ -153,7 +153,7 @@ class Board : Canvas
             j--;
         }
 
-        Square s = new Square(i, j);
+        Square s = Square.NewUnchecked(i, j);
         Piece? capturedPiece = this.position.GetPieceOnSquare(s);
 
         if (selectedSquare is null)

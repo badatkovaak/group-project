@@ -8,7 +8,7 @@ public class Position
     public Color colorToMove;
     public (bool, bool, bool, bool) castling;
     public Square? enPassant;
-    PieceType promoteTo = PieceType.Queen;
+    public PieceType promoteTo = PieceType.Queen;
 
     private Position(
         Piece?[,] board,
@@ -45,6 +45,18 @@ public class Position
         return new Position(board, moves, halfmoves, c, castling, enPassant);
     }
 
+    public Piece? this[Square s]
+    {
+        get => this.board[s.X, s.Y];
+        set => this.board[s.X, s.Y] = value;
+    }
+
+    public Piece? this[int i, int j]
+    {
+        get => this.board[i, j];
+        set => this.board[i, j] = value;
+    }
+
     public Position? MakeAMove(Move m)
     {
         return this.MakeAMove(m.start, m.end);
@@ -65,7 +77,7 @@ public class Position
 
         this.colorToMove = ColorFuncs.Opposite(this.colorToMove);
 
-        Piece? p = this.GetPieceOnSquare(start);
+        Piece? p = this[start];
 
         if (end.Equals(this.enPassant) && p is not null && p.type == PieceType.Pawn)
         {
@@ -74,9 +86,11 @@ public class Position
             if (p.color == Color.White)
                 diff = -1;
 
-            this.board[end.X, end.Y] = this.board[start.X, start.Y];
-            this.board[start.X, start.Y] = null;
-            this.board[end.X, end.Y + diff] = null;
+            this[end] = this[start];
+            this[start] = null;
+            this[end.X, end.Y + diff] = null;
+
+            this.enPassant = null;
 
             return this;
         }
@@ -99,13 +113,21 @@ public class Position
 
             if (end.Y == max)
             {
-                this.board[end.X, end.Y] = new Piece(this.promoteTo, p.color);
-                this.board[start.X, start.Y] = null;
+                this[end] = new Piece(this.promoteTo, p.color);
+                this[start] = null;
 
                 return this;
             }
         }
-        else if (p is not null && p.type == PieceType.King)
+
+        Piece? target = this[end];
+
+        if (target is not null)
+            this.halfmovesFromPawnMoveOrCapture = 0;
+        else
+            this.halfmovesFromPawnMoveOrCapture++;
+
+        if (p is not null && p.type == PieceType.King)
         {
             if (p.color == Color.White)
             {
@@ -123,24 +145,41 @@ public class Position
                     castling.Item4 = false;
                 }
             }
+
+            if (Math.Abs(end.X - start.X) >= 2)
+            {
+                Square rook_start;
+                Square rook_end;
+
+                if (Math.Abs(end.X - start.X) == 2)
+                {
+                    rook_start = Square.NewUnchecked(7, start.Y);
+                    rook_end = Square.NewUnchecked(5, start.Y);
+                }
+                else
+                {
+                    rook_start = Square.NewUnchecked(0, start.Y);
+                    rook_end = Square.NewUnchecked(3, start.Y);
+                }
+
+                this[rook_end] = this[rook_start];
+                this[rook_start] = null;
+                this[end] = this[start];
+                this[start] = null;
+
+                return this;
+            }
         }
 
-        Piece? target = this.GetPieceOnSquare(end);
-
-        if (target is not null)
-            this.halfmovesFromPawnMoveOrCapture = 0;
-        else
-            this.halfmovesFromPawnMoveOrCapture++;
-
-        this.board[end.X, end.Y] = this.board[start.X, start.Y];
-        this.board[start.X, start.Y] = null;
+        this[end] = this[start];
+        this[start] = null;
 
         return this;
     }
 
     public List<Square> GetLegalMoves(Square c)
     {
-        Piece? p = GetPieceOnSquare(c);
+        Piece? p = this[c];
 
         if (p is null)
             return new List<Square>();
@@ -162,7 +201,7 @@ public class Position
 
     private List<Square> GetKingLegalMoves(Square c)
     {
-        Piece? king = GetPieceOnSquare(c);
+        Piece? king = this[c];
 
         if (king is null)
             return new List<Square>();
@@ -172,7 +211,7 @@ public class Position
 
         foreach (Square move in moves)
         {
-            Piece? p = GetPieceOnSquare(move);
+            Piece? p = this[move];
 
             if (p is null)
             {
@@ -195,7 +234,7 @@ public class Position
             for (int i = 0; i < 2; i++)
             {
                 Square s = Square.NewUnchecked(c.X + i + 1, c.Y);
-                Piece? p = this.GetPieceOnSquare(s);
+                Piece? p = this[s];
 
                 if (p is null)
                     continue;
@@ -214,7 +253,7 @@ public class Position
             for (int i = 0; i < 3; i++)
             {
                 Square s = Square.NewUnchecked(c.X + i + 1, c.Y);
-                Piece? p = this.GetPieceOnSquare(s);
+                Piece? p = this[s];
 
                 if (p is null)
                     continue;
@@ -237,7 +276,7 @@ public class Position
 
     private List<Square> GetRookLegalMoves(Square c)
     {
-        Piece? rook = GetPieceOnSquare(c);
+        Piece? rook = this[c];
 
         if (rook is null)
             return new List<Square>();
@@ -269,12 +308,18 @@ public class Position
             {
                 x += step_x;
                 y += step_y;
-                Piece? p = this.board[x, y];
+                Piece? p = this[x, y];
 
                 if (p is null)
                     continue;
 
                 if (p.color == rook.color)
+                {
+                    isPossible = false;
+                    break;
+                }
+
+                if (Math.Abs(x - move.X) + Math.Abs(y - move.Y) != 0)
                 {
                     isPossible = false;
                     break;
@@ -290,7 +335,7 @@ public class Position
 
     private List<Square> GetBishopLegalMoves(Square c)
     {
-        Piece? bishop = this.GetPieceOnSquare(c);
+        Piece? bishop = this[c];
 
         if (bishop is null)
             return new List<Square>();
@@ -306,7 +351,7 @@ public class Position
 
             for (int i = c.X + step_x; (move.X - i) * step_x >= 0; i += step_x)
             {
-                Piece? p = this.board[i, c.Y + Math.Abs(i - c.X) * step_y];
+                Piece? p = this[i, c.Y + Math.Abs(i - c.X) * step_y];
 
                 if (p is null)
                     continue;
@@ -333,17 +378,17 @@ public class Position
 
     private List<Square> GetKnightLegalMoves(Square c)
     {
-        Piece? knight = GetPieceOnSquare(c);
+        Piece? knight = this[c];
 
         if (knight is null)
             return new List<Square>();
 
-        List<Square> moves = GetTypesPossibleMoves(c, knight.type);
+        List<Square> moves = Position.GetTypesPossibleMoves(c, knight.type);
         List<Square> res = new List<Square>();
 
         foreach (Square move in moves)
         {
-            Piece? p = GetPieceOnSquare(move);
+            Piece? p = this[move];
 
             if (p is null || p.color != knight.color)
             {
@@ -357,7 +402,7 @@ public class Position
 
     private List<Square> GetPawnLegalMoves(Square c)
     {
-        Piece? pawn = GetPieceOnSquare(c);
+        Piece? pawn = this[c];
         if (pawn is null)
             return new List<Square>();
 
@@ -366,7 +411,7 @@ public class Position
 
         foreach (Square move in moves)
         {
-            Piece? p = GetPieceOnSquare(move);
+            Piece? p = this[move];
 
             if (move.X == c.X && p is null)
                 res.Add(move);
@@ -378,7 +423,7 @@ public class Position
         if (this.enPassant is null)
             return res;
 
-        if (Math.Abs(this.enPassant.X - c.X) == 1)
+        if (Math.Abs(this.enPassant.X - c.X) == 1 && Math.Abs(this.enPassant.Y - c.Y) == 1)
         {
             if (this.enPassant.Y == 2 && pawn.color == Color.Black)
                 res.Add(this.enPassant);
@@ -519,7 +564,7 @@ public class Position
 
     public Piece? GetPieceOnSquare(Square c)
     {
-        return this.board[c.X, c.Y];
+        return this[c];
     }
 
     public override string ToString()
@@ -529,7 +574,7 @@ public class Position
         {
             for (int i = 0; i < 8; i++)
             {
-                Piece? p = this.board[i, j];
+                Piece? p = this[i, j];
                 if (p is null)
                     res += "- ";
                 else
@@ -539,7 +584,9 @@ public class Position
             res += "\n";
         }
 
+        (bool, bool, bool, bool) c = this.castling;
         res += $"Move - {this.moves}, Color To Move - {this.colorToMove}\n";
+        res += $"Castling - {c.Item1}, {c.Item2}, {c.Item3}, {c.Item4}\n";
         return res;
     }
 }
@@ -555,42 +602,110 @@ public class Move
         this.end = end;
     }
 
-    public static Move? StringToMove(Position pos, string input)
+    public static Move? StringToMove(Position position, string input)
     {
+        if (input[0] == '0')
+        {
+            if (input.Length != 3 && input.Length != 5)
+                return null;
+
+            Color c = position.colorToMove;
+
+            int start_y;
+
+            if (c == Color.White)
+                start_y = 0;
+            else
+                start_y = 7;
+
+            int end_x;
+
+            if (input.Length == 3)
+                end_x = 6;
+            else
+                end_x = 2;
+
+            Square start1 = Square.NewUnchecked(4, start_y);
+            Square end1 = Square.NewUnchecked(end_x, start_y);
+
+            List<Square> moves = position.GetLegalMoves(start1);
+
+            if (!moves.Contains(end1))
+                return null;
+
+            return new Move(start1, end1);
+        }
+
         PieceType? type = null;
+        PieceType? promoteTo = null;
 
         if (input.Length == 2)
             type = PieceType.Pawn;
         else if (input.Contains('x') && input[0] >= 'a' && input[0] <= 'h')
             type = PieceType.Pawn;
+        else if (input.Contains('='))
+        {
+            type = PieceType.Pawn;
+            promoteTo = Piece.FromChar(input[input.Length - 1])?.type;
+        }
         else
             type = Piece.FromChar(input[0])?.type;
 
         if (type is null)
             return null;
 
+        if (promoteTo is not null)
+        {
+            Square? end1 = Square.New(input.Substring(0, 2));
+
+            if (end1 is null)
+                return null;
+
+            int y = 0;
+            if (position.colorToMove == Color.White)
+                y = 7;
+
+            if (end1.Y != y)
+                return null;
+
+            int diff = 1;
+            if (position.colorToMove == Color.White)
+                diff = -1;
+
+            Square start1 = Square.NewUnchecked(end1.X, end1.Y + diff);
+
+            List<Square> moves = position.GetLegalMoves(start1);
+
+            if (!moves.Contains(end1))
+                return null;
+
+            return new Move(start1, end1);
+        }
+
         Square? end = Square.New(input.Substring(input.Length - 2));
 
         if (end is null)
             return null;
 
+        Console.WriteLine($"StringToMove\n{position}, end - {end}, type - {type}");
+
         // Console.WriteLine($"{type} {end} {pos.enPassant}");
 
         if (input.Contains('x'))
         {
-            Piece? p = pos.GetPieceOnSquare(end);
+            Piece? p = position[end];
 
             // Console.WriteLine($"p is - {p}");
 
             if (p is null)
             {
-                if (pos.enPassant is null)
+                if (position.enPassant is null)
                     return null;
 
-                if (pos.enPassant != end)
+                if (position.enPassant != end)
                     return null;
             }
-            else if (p.color == pos.colorToMove)
+            else if (p.color == position.colorToMove)
                 return null;
         }
 
@@ -601,17 +716,17 @@ public class Move
         for (int i = 0; i < 8; i++)
         for (int j = 0; j < 8; j++)
         {
-            Piece? piece = pos.GetPieceOnSquare(Square.NewUnchecked(i, j));
+            Piece? piece = position[Square.NewUnchecked(i, j)];
 
             if (piece is null)
                 continue;
 
-            if (piece.color != pos.colorToMove || piece.type != type)
+            if (piece.color != position.colorToMove || piece.type != type)
                 continue;
 
-            // Console.WriteLine($"{Square.NewUnchecked(i, j)} - {piece}");
+            Console.WriteLine($"{Square.NewUnchecked(i, j)} - {piece}, {i}, {j}");
 
-            List<Square> moves = pos.GetLegalMoves(Square.NewUnchecked(i, j));
+            List<Square> moves = position.GetLegalMoves(Square.NewUnchecked(i, j));
 
             foreach (Square move in moves)
                 Console.WriteLine(move);
@@ -619,7 +734,7 @@ public class Move
             if (!moves.Contains(end))
                 continue;
 
-            // Console.WriteLine($"Contains {Square.NewUnchecked(i, j)} - {piece}, {start}");
+            Console.WriteLine($"Contains {Square.NewUnchecked(i, j)} - {piece}, {start}");
 
             if (start is null)
             {
@@ -627,7 +742,7 @@ public class Move
                 continue;
             }
 
-            // Console.WriteLine("here");
+            Console.WriteLine("here1111111111111111");
 
             if (input.Length != 4)
                 return null;

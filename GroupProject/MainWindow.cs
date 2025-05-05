@@ -2,7 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 
-namespace Backup;
+namespace Chess;
 
 public class MainWindow : Window
 {
@@ -25,7 +25,7 @@ public class MainWindow : Window
         maingrid.Children.Add(board);
 
         TextBlock text = new TextBlock();
-        text.Text = "Hello There !";
+        text.Text = "Hi Mom !";
 
         Grid.SetRow(text, 1);
         maingrid.Children.Add(text);
