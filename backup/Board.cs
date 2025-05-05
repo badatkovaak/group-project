@@ -1,4 +1,4 @@
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Input;
@@ -199,8 +199,71 @@ class Board : Canvas
         highlightedSquares.Clear();
     }
 
+    public static async Task<Piece> PromotePawn(ChessInternals.Color pawnColor, Window parentWindow)
+    {
+        var dialog = new PromotionChoiceWindow(pawnColor);
+        var chosenType = await dialog.ShowDialog<PieceType>(parentWindow);
+        return new Piece(chosenType, pawnColor);
+    }
+
+    public class PromotionChoiceWindow : Window
+    {
+        public PieceType SelectedPiece { get; private set; }
+
+        public PromotionChoiceWindow(ChessInternals.Color pieceColor)
+        {
+            this.Title = "Choose promotion";
+            this.Width = 300;
+            this.Height = 100;
+
+            var panel = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Spacing = 10
+            };
+            var options = new[] { PieceType.Queen, PieceType.Rook, PieceType.Bishop, PieceType.Knight };
+
+            foreach (var type in options)
+            {
+                var btn = new Button
+                {
+                    Content = GetPieceSymbol(type, pieceColor),
+                    Tag = type,
+                    FontSize = 20,
+                    Width = 50,
+                    Height = 50
+                };
+                btn.Click += (s, e) =>
+                {
+                    SelectedPiece = (PieceType)btn.Tag;
+                    Close();
+                };
+                panel.Children.Add(btn);
+            }
+            this.Content = panel;
+        }
+        private string GetPieceSymbol(PieceType type, ChessInternals.Color color)
+        {
+            return type switch
+            {
+                PieceType.Queen => color == ChessInternals.Color.White ? "♕" : "♛",
+                PieceType.Rook => color == ChessInternals.Color.White ? "♖" : "♜",
+                PieceType.Bishop => color == ChessInternals.Color.White ? "♗" : "♝",
+                PieceType.Knight => color == ChessInternals.Color.White ? "♘" : "♞",
+                _ => "?"
+            };
+        }
+    }
+
+
+
     public void OnMouseReleased(object? sender, PointerReleasedEventArgs e)
     {
+        //Console.WriteLine($"parent window - {(this.Parent as Grid).Parent as Window}");
+        //var result = PromotePawn(ChessInternals.Color.White, (this.Parent as Grid).Parent as Window);
+
         if (e.InitialPressMouseButton != MouseButton.Left)
             return;
 
