@@ -57,12 +57,7 @@ public class Position
         set => this.board[i, j] = value;
     }
 
-    public Position? MakeAMove(Move m)
-    {
-        return this.MakeAMove(m.start, m.end);
-    }
-
-    public Position? MakeAMove(Square start, Square end)
+    public Position? MakeAMove(Square start, Square end, bool goDeeper = true)
     {
         List<Square> l = GetLegalMoves(start);
 
@@ -71,6 +66,46 @@ public class Position
 
         if (!l.Contains(end))
             return null;
+
+        if (goDeeper)
+        {
+            Position clone = this.CreateACopy();
+
+            Position? res = clone.MakeAMove(start, end, false);
+
+            if (res is null)
+                throw new Exception();
+
+            Square? king_square = null;
+
+            for (int i = 0; i < 8; i++)
+            for (int j = 0; j < 8; j++)
+            {
+                Piece? k = clone[i, j];
+
+                if (k is null || k.type != PieceType.King || k.color != this.colorToMove)
+                    continue;
+
+                king_square = Square.NewUnchecked(i, j);
+                break;
+            }
+
+            if (king_square is null)
+                throw new Exception();
+
+            for (int i = 0; i < 8; i++)
+            for (int j = 0; j < 8; j++)
+            {
+                Square s = Square.NewUnchecked(i, j);
+                if (s is null)
+                    continue;
+
+                List<Square> moves = clone.GetLegalMoves(s);
+
+                if (moves.Contains(king_square))
+                    return null;
+            }
+        }
 
         if (this.colorToMove == Color.Black)
             this.moves++;
@@ -170,6 +205,22 @@ public class Position
                 return this;
             }
         }
+
+        Square s1 = Square.NewUnchecked(0, 0);
+        if (end == s1 || start == s1)
+            this.castling.Item1 = false;
+
+        s1 = Square.NewUnchecked(7, 0);
+        if (end == s1 || start == s1)
+            this.castling.Item2 = false;
+
+        s1 = Square.NewUnchecked(0, 7);
+        if (end == s1 || start == s1)
+            this.castling.Item1 = false;
+
+        s1 = Square.NewUnchecked(7, 7);
+        if (end == s1 || start == s1)
+            this.castling.Item2 = false;
 
         this[end] = this[start];
         this[start] = null;
@@ -565,6 +616,26 @@ public class Position
     public Piece? GetPieceOnSquare(Square c)
     {
         return this[c];
+    }
+
+    public Position CreateACopy()
+    {
+        Piece?[,] b = new Piece?[8, 8];
+
+        for (int i = 0; i < 8; i++)
+        for (int j = 0; j < 8; j++)
+            b[i, j] = this[i, j];
+
+        int halfmoves = this.halfmovesFromPawnMoveOrCapture;
+        Color c = this.colorToMove;
+        var castle = this.castling;
+        Square? s = this.enPassant;
+        Position? p = Position.New(b, this.moves, halfmoves, c, castle, s);
+
+        if (p is null)
+            throw new Exception();
+
+        return (Position)p;
     }
 
     public override string ToString()
