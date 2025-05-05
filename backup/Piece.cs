@@ -24,7 +24,13 @@ class PieceLabel : Label
         // text.VerticalAlignment = VerticalAlignment.Center;
 
         Image i = new Image();
-        i.Source = new Bitmap("./assets/" + this.piece.ToString() + ".png");
+        string s1 = this.piece.ToString();
+        string s2 = "";
+
+        if (((int)s1[0] & 32) > 0)
+            s2 = "1";
+
+        i.Source = new Bitmap("C:\\Users\\Redmi\\source\\repos\\group-project3\\backup\\assets\\" + s1 + s2 + ".png");
 
         i.Height = 50;
         i.Width = 50;

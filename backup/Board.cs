@@ -20,6 +20,9 @@ class Board : Canvas
 
     public Board(string fen = default_fen)
     {
+        this.Width = 400;
+        this.Height = 400;
+        this.Background = Brushes.Transparent;
         Position? p = FEN.PositionFromFEN(fen);
 
         if (p is null)
@@ -32,13 +35,14 @@ class Board : Canvas
         this.pieces = new List<PieceLabel>();
         bool isLight = true;
 
+        double squareSize = this.Width / 8;
         for (int i = 0; i < 8; i++)
         {
             for (int j = 0; j < 8; j++)
             {
                 Rectangle r = new Rectangle();
-                r.Height = 10;
-                r.Width = 10;
+                r.Height = squareSize;
+                r.Width = squareSize;
                 Canvas.SetTop(r, 0);
                 Canvas.SetLeft(r, 0);
 
@@ -74,48 +78,78 @@ class Board : Canvas
         this.PointerReleased += OnMouseReleased;
     }
 
-    public void OnDimensionsChange(object? sender, EffectiveViewportChangedEventArgs e)
+    public void Resize(double newSize)
     {
-        double h = this.Bounds.Height;
-        double w = this.Bounds.Width;
+        this.Width = newSize;
+        this.Height = newSize;
 
-        // if (h != w)
-        // {
-        //     if (h > w)
-        //         h = w;
-        //     else
-        //         w = h;
-        // }
-
-        double squareWidth = w / 8;
-        double squareHeight = h / 8;
-
-        Console.WriteLine(
-            $"h - {h}, w - {w}, ch - {squareHeight}, cw - {squareWidth}, Bounds - {this.Bounds.Height}, {this.Bounds.Width}"
-        );
+        double squareSize = newSize / 8;
 
         for (int i = 0; i < 8; i++)
-        for (int j = 0; j < 8; j++)
         {
-            Rectangle r = this.squares[i * 8 + j];
-            r.Height = squareHeight;
-            r.Width = squareWidth;
-            Canvas.SetTop(r, i * squareHeight);
-            Canvas.SetLeft(r, j * squareWidth);
+            for (int j = 0; j < 8; j++)
+            {
+                var square = this.squares[i * 8 + j];
+                square.Width = squareSize;
+                square.Height = squareSize;
+                Canvas.SetLeft(square, j * squareSize);
+                Canvas.SetTop(square, i * squareSize);
+            }
+        }
+
+        foreach (var piece in this.pieces)
+        {
+            Canvas.SetLeft(piece, piece.square.X * squareSize);
+            Canvas.SetTop(piece, (7 - piece.square.Y) * squareSize);
+
+            if (piece.Content is Image img)
+            {
+                img.Width = squareSize * image_factor;
+                img.Height = squareSize * image_factor;
+            }
+        }
+
+        this.InvalidateArrange();
+        this.InvalidateMeasure();
+    }
+
+    public void OnDimensionsChange(object? sender, EffectiveViewportChangedEventArgs e)
+    {
+        double availableWidth = this.Bounds.Width;
+        double availableHeight = this.Bounds.Height;
+        double boardSize = Math.Min(availableWidth, availableHeight);
+
+        double size = Math.Min(this.Bounds.Height, this.Bounds.Width);
+        if (boardSize <= 0) return;
+        double squareSize = boardSize / 8;
+
+        Console.WriteLine(
+    $"boarsSize - {boardSize}, ch - {squareSize}, Bounds - {this.Bounds.Height}, {this.Bounds.Width}");
+
+        for (int i = 0; i <0; i++)
+        {
+            for(int j = 0; j < 8; j++)
+            {
+                Rectangle r = this.squares[i * 8 + j];
+                r.Width = squareSize;
+                r.Height = squareSize;
+                Canvas.SetTop(r, i * squareSize);
+                Canvas.SetLeft(r, i * squareSize);
+            }
         }
 
         foreach (PieceLabel p in this.pieces)
         {
-            Canvas.SetLeft(p, p.square.X * squareWidth);
-            Canvas.SetTop(p, (7 - p.square.Y) * squareHeight);
+            Canvas.SetLeft(p, p.square.X * squareSize);
+            Canvas.SetTop(p, (7 - p.square.Y) * squareSize);
 
             Image? image = p.Content as Image;
 
             if (image is null)
                 continue;
 
-            image.Height = squareHeight * Board.image_factor;
-            image.Width = squareWidth * Board.image_factor;
+            image.Height = squareSize * Board.image_factor;
+            image.Width = squareSize * Board.image_factor;
         }
     }
 
@@ -215,7 +249,7 @@ class Board : Canvas
                 if (label is null)
                 {
                     Console.WriteLine("should not happen");
-                    return;
+                    return; 
                 }
 
                 this.pieces.Remove(label);
