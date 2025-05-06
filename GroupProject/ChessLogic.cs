@@ -57,9 +57,9 @@ public class Position
         set => this.board[i, j] = value;
     }
 
-    public Position? MakeAMove(Square start, Square end, bool goDeeper = true)
+    public List<Move>? MakeAMove(Square start, Square end, bool goDeeper = true)
     {
-        List<Square> l = GetLegalMoves(start);
+        List<Square> l = GetLegalMoves(start, goDeeper);
 
         foreach (Square s in l)
             Console.WriteLine(s);
@@ -67,45 +67,7 @@ public class Position
         if (!l.Contains(end))
             return null;
 
-        if (goDeeper)
-        {
-            Position clone = this.CreateACopy();
-
-            Position? res = clone.MakeAMove(start, end, false);
-
-            if (res is null)
-                throw new Exception();
-
-            Square? king_square = null;
-
-            for (int i = 0; i < 8; i++)
-            for (int j = 0; j < 8; j++)
-            {
-                Piece? k = clone[i, j];
-
-                if (k is null || k.type != PieceType.King || k.color != this.colorToMove)
-                    continue;
-
-                king_square = Square.NewUnchecked(i, j);
-                break;
-            }
-
-            if (king_square is null)
-                throw new Exception();
-
-            for (int i = 0; i < 8; i++)
-            for (int j = 0; j < 8; j++)
-            {
-                Square s = Square.NewUnchecked(i, j);
-                if (s is null)
-                    continue;
-
-                List<Square> moves = clone.GetLegalMoves(s);
-
-                if (moves.Contains(king_square))
-                    return null;
-            }
-        }
+        List<Move> result = new List<Move>();
 
         if (this.colorToMove == Color.Black)
             this.moves++;
@@ -127,7 +89,11 @@ public class Position
 
             this.enPassant = null;
 
-            return this;
+            result.Add(new Move(start, end));
+            result.Add(new Move(start, null));
+            result.Add(new Move(Square.NewUnchecked(end.X, end.Y + diff), null));
+
+            return result;
         }
 
         this.enPassant = null;
@@ -151,7 +117,10 @@ public class Position
                 this[end] = new Piece(this.promoteTo, p.color);
                 this[start] = null;
 
-                return this;
+                result.Add(new Move(null, end));
+                result.Add(new Move(start, null));
+
+                return result;
             }
         }
 
@@ -202,7 +171,12 @@ public class Position
                 this[end] = this[start];
                 this[start] = null;
 
-                return this;
+                result.Add(new Move(rook_start, rook_end));
+                result.Add(new Move(rook_start, null));
+                result.Add(new Move(start, end));
+                result.Add(new Move(start, null));
+
+                return result;
             }
         }
 
@@ -225,10 +199,13 @@ public class Position
         this[end] = this[start];
         this[start] = null;
 
-        return this;
+        result.Add(new Move(start, end));
+        result.Add(new Move(start, null));
+
+        return result;
     }
 
-    public List<Square> GetLegalMoves(Square c)
+    public List<Square> GetLegalMoves(Square c, bool goDeeper = true)
     {
         Piece? p = this[c];
 
@@ -238,7 +215,7 @@ public class Position
         if (p.color != this.colorToMove)
             return new List<Square>();
 
-        return p.type switch
+        List<Square> moves = p.type switch
         {
             PieceType.King => this.GetKingLegalMoves(c),
             PieceType.Queen => this.GetQueenLegalMoves(c),
@@ -248,6 +225,75 @@ public class Position
             PieceType.Pawn => this.GetPawnLegalMoves(c),
             _ => throw new Exception(),
         };
+
+        if (!goDeeper)
+            return moves;
+
+        List<Square> result = new List<Square>();
+
+        foreach (Square move in moves)
+        {
+            Position clone = this.CreateACopy();
+
+            List<Move>? res = clone.MakeAMove(c, move, false);
+
+            if (res is null)
+                throw new Exception();
+
+            Square? king_square = null;
+
+            for (int i = 0; i < 8; i++)
+            for (int j = 0; j < 8; j++)
+            {
+                Piece? k = clone[i, j];
+
+                if (k is null || k.type != PieceType.King || k.color != this.colorToMove)
+                    continue;
+
+                king_square = Square.NewUnchecked(i, j);
+                break;
+            }
+
+            if (king_square is null)
+                throw new Exception();
+
+            bool canCaptureKing = false;
+
+            for (int i = 0; i < 8; i++)
+            {
+                for (int j = 0; j < 8; j++)
+                {
+                    Square s = Square.NewUnchecked(i, j);
+
+                    if (s is null)
+                        continue;
+
+                    List<Square> moves1 = clone.GetLegalMoves(s, false);
+
+                    if (moves.Contains(king_square))
+                    {
+                        canCaptureKing = true;
+                        break;
+                    }
+                }
+
+                if (canCaptureKing)
+                    break;
+            }
+
+            if (!canCaptureKing)
+                result.Add(move);
+        }
+
+        Console.WriteLine(this);
+        Console.WriteLine($"legal moves from {c}: ");
+
+        foreach (Square move in moves)
+            Console.Write($"{move},");
+
+        Console.WriteLine();
+
+        return result;
     }
 
     private List<Square> GetKingLegalMoves(Square c)
@@ -662,18 +708,30 @@ public class Position
     }
 }
 
-public class Move
+public struct Move
+{
+    public readonly Square? start;
+    public readonly Square? end;
+
+    public Move(Square? s, Square? e)
+    {
+        start = s;
+        end = e;
+    }
+}
+
+public class MoveCertain
 {
     public Square start;
     public Square end;
 
-    public Move(Square start, Square end)
+    public MoveCertain(Square start, Square end)
     {
         this.start = start;
         this.end = end;
     }
 
-    public static Move? StringToMove(Position position, string input)
+    public static MoveCertain? StringToMove(Position position, string input)
     {
         if (input[0] == '0')
         {
@@ -704,7 +762,7 @@ public class Move
             if (!moves.Contains(end1))
                 return null;
 
-            return new Move(start1, end1);
+            return new MoveCertain(start1, end1);
         }
 
         PieceType? type = null;
@@ -750,7 +808,7 @@ public class Move
             if (!moves.Contains(end1))
                 return null;
 
-            return new Move(start1, end1);
+            return new MoveCertain(start1, end1);
         }
 
         Square? end = Square.New(input.Substring(input.Length - 2));
@@ -851,7 +909,7 @@ public class Move
         if (start is null)
             return null;
 
-        return new Move(start, end);
+        return new MoveCertain(start, end);
     }
 }
 

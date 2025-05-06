@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using Avalonia.Layout;
-using Avalonia.Media;
 
 namespace Chess;
 
@@ -10,8 +9,6 @@ public class MainWindow : Window
     {
         this.Title = "Chess";
 
-        this.Width = 600;
-        this.Height = 600;
         this.MinWidth = 100;
         this.MinHeight = 100;
 
@@ -24,9 +21,8 @@ public class MainWindow : Window
 
         Board board = new Board();
 
-        board.HorizontalAlignment = HorizontalAlignment.Center;
-        board.VerticalAlignment = VerticalAlignment.Center;
-        board.Background = Brushes.White;
+        board.HorizontalAlignment = HorizontalAlignment.Stretch;
+        board.VerticalAlignment = VerticalAlignment.Stretch;
 
         Grid.SetRow(board, 0);
         maingrid.Children.Add(board);
@@ -39,14 +35,14 @@ public class MainWindow : Window
 
         this.Content = maingrid;
 
-        this.SizeChanged += (sender, e) =>
-        {
-            double availableHeight = maingrid.Bounds.Height - text.Bounds.Height;
-            double availableWidth = maingrid.Bounds.Width;
-            double boardSize = Math.Min(availableWidth, availableHeight);
-            board.Resize(boardSize);
-        };
+        // this.SizeChanged += (sender, e) =>
+        // {
+        //     double availableHeight = maingrid.Bounds.Height - text.Bounds.Height;
+        //     double availableWidth = maingrid.Bounds.Width;
+        //     double boardSize = Math.Min(availableWidth, availableHeight);
+        //     board.Resize(boardSize);
+        // };
     }
 
-    public void OnDimensionsChange(object? sender, EffectiveViewportChangedEventArgs e) { }
+    // public void OnDimensionsChange(object? sender, EffectiveViewportChangedEventArgs e) { }
 }

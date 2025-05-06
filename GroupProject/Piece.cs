@@ -19,14 +19,7 @@ public class PieceLabel : Label
 
         i.Height = 50;
         i.Width = 50;
-        i.SizeChanged += OnSizeChanged;
 
         this.Content = i;
-    }
-
-    public void OnSizeChanged(object? sender, SizeChangedEventArgs e)
-    {
-        this.Height = e.NewSize.Height;
-        this.Width = e.NewSize.Width;
     }
 }
