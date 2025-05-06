@@ -1,8 +1,9 @@
 ﻿using Avalonia;
 
-namespace Backup;
+namespace Chess;
 
-class Program {
+class Program
+{
     [STAThread]
     public static void Main(string[] args) =>
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);

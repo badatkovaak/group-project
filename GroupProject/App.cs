@@ -2,7 +2,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Styling;
 
-namespace Backup;
+namespace Chess;
 
 public class App : Application
 {
