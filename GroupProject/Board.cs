@@ -1,4 +1,4 @@
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Input;
@@ -18,8 +18,13 @@ class Board : Canvas
     List<PieceLabel> pieces;
     Square? selectedSquare;
 
+    private List<Rectangle> highlightedSquares = new List<Rectangle>();
+
     public Board(string fen = default_fen)
     {
+        this.Width = 400;
+        this.Height = 400;
+        this.Background = Brushes.Transparent;
         Position? p = FEN.PositionFromFEN(fen);
 
         if (p is null)
@@ -32,13 +37,14 @@ class Board : Canvas
         this.pieces = new List<PieceLabel>();
         bool isLight = true;
 
+        double squareSize = this.Width / 8;
         for (int i = 0; i < 8; i++)
         {
             for (int j = 0; j < 8; j++)
             {
                 Rectangle r = new Rectangle();
-                r.Height = 10;
-                r.Width = 10;
+                r.Height = squareSize;
+                r.Width = squareSize;
                 Canvas.SetTop(r, 0);
                 Canvas.SetLeft(r, 0);
 
@@ -74,58 +80,190 @@ class Board : Canvas
         this.PointerReleased += OnMouseReleased;
     }
 
-    public void OnDimensionsChange(object? sender, EffectiveViewportChangedEventArgs e)
+    public void Resize(double newSize)
     {
-        double h = this.Bounds.Height;
-        double w = this.Bounds.Width;
+        this.Width = newSize;
+        this.Height = newSize;
 
-        // if (h != w)
-        // {
-        //     if (h > w)
-        //         h = w;
-        //     else
-        //         w = h;
-        // }
-
-        double squareWidth = w / 8;
-        double squareHeight = h / 8;
-
-        Console.WriteLine(
-            $"h - {h}, w - {w}, ch - {squareHeight}, cw - {squareWidth}, Bounds - {this.Bounds.Height}, {this.Bounds.Width}"
-        );
+        double squareSize = newSize / 8;
 
         for (int i = 0; i < 8; i++)
-        for (int j = 0; j < 8; j++)
         {
-            Rectangle r = this.squares[i * 8 + j];
-            r.Height = squareHeight;
-            r.Width = squareWidth;
-            Canvas.SetTop(r, i * squareHeight);
-            Canvas.SetLeft(r, j * squareWidth);
+            for (int j = 0; j < 8; j++)
+            {
+                var square = this.squares[i * 8 + j];
+                square.Width = squareSize;
+                square.Height = squareSize;
+                Canvas.SetLeft(square, j * squareSize);
+                Canvas.SetTop(square, i * squareSize);
+            }
+        }
+
+        foreach (var piece in this.pieces)
+        {
+            Canvas.SetLeft(piece, piece.square.X * squareSize);
+            Canvas.SetTop(piece, (7 - piece.square.Y) * squareSize);
+
+            if (piece.Content is Image img)
+            {
+                img.Width = squareSize * image_factor;
+                img.Height = squareSize * image_factor;
+            }
+        }
+
+        this.InvalidateArrange();
+        this.InvalidateMeasure();
+    }
+
+    public void OnDimensionsChange(object? sender, EffectiveViewportChangedEventArgs e)
+    {
+        double availableWidth = this.Bounds.Width;
+        double availableHeight = this.Bounds.Height;
+        double boardSize = Math.Min(availableWidth, availableHeight);
+
+        double size = Math.Min(this.Bounds.Height, this.Bounds.Width);
+        if (boardSize <= 0) return;
+        double squareSize = boardSize / 8;
+
+        Console.WriteLine(
+    $"boarsSize - {boardSize}, ch - {squareSize}, Bounds - {this.Bounds.Height}, {this.Bounds.Width}");
+
+        for (int i = 0; i <0; i++)
+        {
+            for(int j = 0; j < 8; j++)
+            {
+                Rectangle r = this.squares[i * 8 + j];
+                r.Width = squareSize;
+                r.Height = squareSize;
+                Canvas.SetTop(r, i * squareSize);
+                Canvas.SetLeft(r, i * squareSize);
+            }
         }
 
         foreach (PieceLabel p in this.pieces)
         {
-            Canvas.SetLeft(p, p.square.X * squareWidth);
-            Canvas.SetTop(p, (7 - p.square.Y) * squareHeight);
+            Canvas.SetLeft(p, p.square.X * squareSize);
+            Canvas.SetTop(p, (7 - p.square.Y) * squareSize);
 
             Image? image = p.Content as Image;
 
             if (image is null)
                 continue;
 
-            image.Height = squareHeight * Board.image_factor;
-            image.Width = squareWidth * Board.image_factor;
+            image.Height = squareSize * Board.image_factor;
+            image.Width = squareSize * Board.image_factor;
         }
     }
 
     public void HighlightLegalMoves(Square s)
     {
-        return;
+        ClearHighlights();
+
+        var legalMoves = this.position.GetLegalMoves(s);
+        double squareSize = this.Width / 8;
+
+        foreach (Square move in legalMoves)
+        {
+            Rectangle highlight = new Rectangle()
+            {
+                Width = squareSize,
+                Height = squareSize,
+                Fill = new SolidColorBrush(Colors.Yellow) { Opacity = 0.4 },
+                Stroke = Brushes.Gold,
+                StrokeThickness = 2,
+                IsHitTestVisible = false
+            };
+
+            Canvas.SetLeft(highlight, move.X * squareSize);
+            Canvas.SetTop(highlight, (7 - move.Y) * squareSize);
+
+            this.highlightedSquares.Add(highlight);
+            this.Children.Add(highlight);
+
+            highlight.SetValue(Canvas.ZIndexProperty, 1);
+
+        }
+
+        foreach (var piece in this.pieces)
+        {
+            piece.SetValue(Canvas.ZIndexProperty, 2);
+        }
     }
+    public void ClearHighlights()
+    {
+        foreach (var highlight in highlightedSquares)
+        {
+            this.Children.Remove(highlight);
+        }
+
+        highlightedSquares.Clear();
+    }
+
+    public static async Task<Piece> PromotePawn(ChessInternals.Color pawnColor, Window parentWindow)
+    {
+        var dialog = new PromotionChoiceWindow(pawnColor);
+        var chosenType = await dialog.ShowDialog<PieceType>(parentWindow);
+        return new Piece(chosenType, pawnColor);
+    }
+
+    public class PromotionChoiceWindow : Window
+    {
+        public PieceType SelectedPiece { get; private set; }
+
+        public PromotionChoiceWindow(ChessInternals.Color pieceColor)
+        {
+            this.Title = "Choose promotion";
+            this.Width = 300;
+            this.Height = 100;
+
+            var panel = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Spacing = 10
+            };
+            var options = new[] { PieceType.Queen, PieceType.Rook, PieceType.Bishop, PieceType.Knight };
+
+            foreach (var type in options)
+            {
+                var btn = new Button
+                {
+                    Content = GetPieceSymbol(type, pieceColor),
+                    Tag = type,
+                    FontSize = 20,
+                    Width = 50,
+                    Height = 50
+                };
+                btn.Click += (s, e) =>
+                {
+                    SelectedPiece = (PieceType)btn.Tag;
+                    Close();
+                };
+                panel.Children.Add(btn);
+            }
+            this.Content = panel;
+        }
+        private string GetPieceSymbol(PieceType type, ChessInternals.Color color)
+        {
+            return type switch
+            {
+                PieceType.Queen => color == ChessInternals.Color.White ? "♕" : "♛",
+                PieceType.Rook => color == ChessInternals.Color.White ? "♖" : "♜",
+                PieceType.Bishop => color == ChessInternals.Color.White ? "♗" : "♝",
+                PieceType.Knight => color == ChessInternals.Color.White ? "♘" : "♞",
+                _ => "?"
+            };
+        }
+    }
+
+
 
     public void OnMouseReleased(object? sender, PointerReleasedEventArgs e)
     {
+        //Console.WriteLine($"parent window - {(this.Parent as Grid).Parent as Window}");
+        //var result = PromotePawn(ChessInternals.Color.White, (this.Parent as Grid).Parent as Window);
+
         if (e.InitialPressMouseButton != MouseButton.Left)
             return;
 
@@ -164,17 +302,20 @@ class Board : Canvas
             if (capturedPiece.color != this.position.colorToMove)
                 return;
 
+            HighlightLegalMoves(s);
+
             this.selectedSquare = s;
             Console.WriteLine($"selected Square - {s}");
             return;
         }
 
-        if (this.selectedSquare is null)
+        if (this.selectedSquare is null)    
             throw new Exception();
 
         if (this.selectedSquare.Equals(s))
         {
             this.selectedSquare = null;
+            ClearHighlights();
             Console.WriteLine("diselected square");
             return;
         }
@@ -185,12 +326,16 @@ class Board : Canvas
 
             if (!isLegal)
             {
+                this.selectedSquare = null;
+                ClearHighlights();
                 Console.WriteLine($"trying to make an illegal move - {this.selectedSquare} {s}");
                 return;
             }
 
             Square start = this.selectedSquare;
             Square end = s;
+
+            Console.WriteLine(this.position);
 
             Position? pos = this.position.MakeAMove(start, end);
 
@@ -202,7 +347,10 @@ class Board : Canvas
 
             Console.WriteLine($"Made legal move - {start} {end}");
 
+            Console.WriteLine(this.position);
+
             this.selectedSquare = null;
+            ClearHighlights();
 
             if (capturedPiece is not null)
             {
@@ -215,7 +363,7 @@ class Board : Canvas
                 if (label is null)
                 {
                     Console.WriteLine("should not happen");
-                    return;
+                    return; 
                 }
 
                 this.pieces.Remove(label);
