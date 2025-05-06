@@ -22,8 +22,6 @@ class Board : Canvas
 
     public Board(string fen = default_fen)
     {
-        this.Width = 400;
-        this.Height = 400;
         this.Background = Brushes.Transparent;
         Position? p = FEN.PositionFromFEN(fen);
 
@@ -121,16 +119,15 @@ class Board : Canvas
         double availableHeight = this.Bounds.Height;
         double boardSize = Math.Min(availableWidth, availableHeight);
 
-        double size = Math.Min(this.Bounds.Height, this.Bounds.Width);
-        if (boardSize <= 0) return;
         double squareSize = boardSize / 8;
 
         Console.WriteLine(
-    $"boarsSize - {boardSize}, ch - {squareSize}, Bounds - {this.Bounds.Height}, {this.Bounds.Width}");
+            $"boardSize - {boardSize}, ch - {squareSize}, Bounds - {this.Bounds.Height}, {this.Bounds.Width}"
+        );
 
-        for (int i = 0; i <0; i++)
+        for (int i = 0; i < 0; i++)
         {
-            for(int j = 0; j < 8; j++)
+            for (int j = 0; j < 8; j++)
             {
                 Rectangle r = this.squares[i * 8 + j];
                 r.Width = squareSize;
@@ -171,7 +168,7 @@ class Board : Canvas
                 Fill = new SolidColorBrush(Colors.Yellow) { Opacity = 0.4 },
                 Stroke = Brushes.Gold,
                 StrokeThickness = 2,
-                IsHitTestVisible = false
+                IsHitTestVisible = false,
             };
 
             Canvas.SetLeft(highlight, move.X * squareSize);
@@ -181,7 +178,6 @@ class Board : Canvas
             this.Children.Add(highlight);
 
             highlight.SetValue(Canvas.ZIndexProperty, 1);
-
         }
 
         foreach (var piece in this.pieces)
@@ -189,6 +185,7 @@ class Board : Canvas
             piece.SetValue(Canvas.ZIndexProperty, 2);
         }
     }
+
     public void ClearHighlights()
     {
         foreach (var highlight in highlightedSquares)
@@ -199,7 +196,7 @@ class Board : Canvas
         highlightedSquares.Clear();
     }
 
-    public static async Task<Piece> PromotePawn(ChessInternals.Color pawnColor, Window parentWindow)
+    public static async Task<Piece> PromotePawn(ChessLogic.Color pawnColor, Window parentWindow)
     {
         var dialog = new PromotionChoiceWindow(pawnColor);
         var chosenType = await dialog.ShowDialog<PieceType>(parentWindow);
@@ -210,7 +207,7 @@ class Board : Canvas
     {
         public PieceType SelectedPiece { get; private set; }
 
-        public PromotionChoiceWindow(ChessInternals.Color pieceColor)
+        public PromotionChoiceWindow(ChessLogic.Color pieceColor)
         {
             this.Title = "Choose promotion";
             this.Width = 300;
@@ -221,9 +218,15 @@ class Board : Canvas
                 Orientation = Orientation.Horizontal,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
-                Spacing = 10
+                Spacing = 10,
             };
-            var options = new[] { PieceType.Queen, PieceType.Rook, PieceType.Bishop, PieceType.Knight };
+            var options = new[]
+            {
+                PieceType.Queen,
+                PieceType.Rook,
+                PieceType.Bishop,
+                PieceType.Knight,
+            };
 
             foreach (var type in options)
             {
@@ -233,7 +236,7 @@ class Board : Canvas
                     Tag = type,
                     FontSize = 20,
                     Width = 50,
-                    Height = 50
+                    Height = 50,
                 };
                 btn.Click += (s, e) =>
                 {
@@ -244,25 +247,24 @@ class Board : Canvas
             }
             this.Content = panel;
         }
-        private string GetPieceSymbol(PieceType type, ChessInternals.Color color)
+
+        private string GetPieceSymbol(PieceType type, ChessLogic.Color color)
         {
             return type switch
             {
-                PieceType.Queen => color == ChessInternals.Color.White ? "♕" : "♛",
-                PieceType.Rook => color == ChessInternals.Color.White ? "♖" : "♜",
-                PieceType.Bishop => color == ChessInternals.Color.White ? "♗" : "♝",
-                PieceType.Knight => color == ChessInternals.Color.White ? "♘" : "♞",
-                _ => "?"
+                PieceType.Queen => color == ChessLogic.Color.White ? "♕" : "♛",
+                PieceType.Rook => color == ChessLogic.Color.White ? "♖" : "♜",
+                PieceType.Bishop => color == ChessLogic.Color.White ? "♗" : "♝",
+                PieceType.Knight => color == ChessLogic.Color.White ? "♘" : "♞",
+                _ => "?",
             };
         }
     }
 
-
-
     public void OnMouseReleased(object? sender, PointerReleasedEventArgs e)
     {
         //Console.WriteLine($"parent window - {(this.Parent as Grid).Parent as Window}");
-        //var result = PromotePawn(ChessInternals.Color.White, (this.Parent as Grid).Parent as Window);
+        // var result = PromotePawn(ChessInternals.Color.White, (this.Parent as Grid).Parent as Window);
 
         if (e.InitialPressMouseButton != MouseButton.Left)
             return;
@@ -309,7 +311,7 @@ class Board : Canvas
             return;
         }
 
-        if (this.selectedSquare is null)    
+        if (this.selectedSquare is null)
             throw new Exception();
 
         if (this.selectedSquare.Equals(s))
@@ -363,7 +365,7 @@ class Board : Canvas
                 if (label is null)
                 {
                     Console.WriteLine("should not happen");
-                    return; 
+                    return;
                 }
 
                 this.pieces.Remove(label);
