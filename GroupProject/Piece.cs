@@ -15,7 +15,9 @@ public class PieceLabel : Label
         this.square = square;
 
         Image i = new Image();
-        i.Source = new Bitmap("./assets/" + this.piece.ToString() + ".png");
+        string image_path = piece.ToString();
+        image_path += piece.color == Color.White ? "" : "1";
+        i.Source = new Bitmap("./assets/" + image_path + ".png");
 
         i.Height = 50;
         i.Width = 50;

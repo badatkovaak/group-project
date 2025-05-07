@@ -90,7 +90,7 @@ public class Position
             this.enPassant = null;
 
             result.Add(new Move(start, end));
-            result.Add(new Move(start, null));
+            // result.Add(new Move(start, null));
             result.Add(new Move(Square.NewUnchecked(end.X, end.Y + diff), null));
 
             return result;
@@ -172,9 +172,9 @@ public class Position
                 this[start] = null;
 
                 result.Add(new Move(rook_start, rook_end));
-                result.Add(new Move(rook_start, null));
+                // result.Add(new Move(rook_start, null));
                 result.Add(new Move(start, end));
-                result.Add(new Move(start, null));
+                // result.Add(new Move(start, null));
 
                 return result;
             }
@@ -200,7 +200,7 @@ public class Position
         this[start] = null;
 
         result.Add(new Move(start, end));
-        result.Add(new Move(start, null));
+        // result.Add(new Move(start, null));
 
         return result;
     }
@@ -226,8 +226,18 @@ public class Position
             _ => throw new Exception(),
         };
 
-        if (!goDeeper)
+
+
+        if (!goDeeper){
+            Console.WriteLine($"Shallow legal moves from {c}");
+
+            foreach(Square move in moves)
+                Console.Write($"{move} ");
+
+            Console.WriteLine();
+
             return moves;
+        }
 
         List<Square> result = new List<Square>();
 
@@ -240,7 +250,9 @@ public class Position
             if (res is null)
                 throw new Exception();
 
-            Square? king_square = null;
+            Console.WriteLine(clone);
+
+            Square? kingSquare = null;
 
             for (int i = 0; i < 8; i++)
             for (int j = 0; j < 8; j++)
@@ -250,12 +262,14 @@ public class Position
                 if (k is null || k.type != PieceType.King || k.color != this.colorToMove)
                     continue;
 
-                king_square = Square.NewUnchecked(i, j);
+                kingSquare = Square.NewUnchecked(i, j);
                 break;
             }
 
-            if (king_square is null)
+            if (kingSquare is null)
                 throw new Exception();
+
+            Console.WriteLine($"kings position is {kingSquare}");
 
             bool canCaptureKing = false;
 
@@ -265,12 +279,16 @@ public class Position
                 {
                     Square s = Square.NewUnchecked(i, j);
 
-                    if (s is null)
+                    Piece? p1 = clone[s];
+
+                    if (p is null || p.color != clone.colorToMove)
                         continue;
 
                     List<Square> moves1 = clone.GetLegalMoves(s, false);
 
-                    if (moves.Contains(king_square))
+                    Console.WriteLine($"checking moves from {s} - {moves.Contains(kingSquare)}");
+
+                    if (moves.Contains(kingSquare))
                     {
                         canCaptureKing = true;
                         break;
@@ -285,11 +303,11 @@ public class Position
                 result.Add(move);
         }
 
-        Console.WriteLine(this);
-        Console.WriteLine($"legal moves from {c}: ");
+        // Console.WriteLine(this);
+        Console.WriteLine($"Deep legal moves from {c}: ");
 
         foreach (Square move in moves)
-            Console.Write($"{move},");
+            Console.Write($"{move} ");
 
         Console.WriteLine();
 
