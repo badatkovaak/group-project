@@ -7,3 +7,7 @@ public enum PieceType
     Knight,
     Pawn,
 }
+
+// private class PieceTypeFuncs{
+//     // public static List<PieceType>
+// }

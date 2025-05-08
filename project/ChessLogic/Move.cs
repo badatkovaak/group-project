@@ -4,11 +4,13 @@ public class MoveCertain
 {
     public Square start;
     public Square end;
+    public PieceType? promoteTo;
 
-    public MoveCertain(Square start, Square end)
+    public MoveCertain(Square start, Square end, PieceType? promoteTo = null)
     {
         this.start = start;
         this.end = end;
+        this.promoteTo = promoteTo;
     }
 
     public static MoveCertain? StringToMove(Position position, string input)

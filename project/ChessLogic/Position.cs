@@ -61,6 +61,9 @@ public class Position
     {
         List<Square> l = GetLegalMoves(start, goDeeper);
 
+        // foreach (Square s in l)
+        //     Console.WriteLine(s);
+
         if (!l.Contains(end))
             return null;
 
@@ -147,12 +150,12 @@ public class Position
                 }
             }
 
-            if (Math.Abs(end.X - start.X) >= 2)
+            if (Math.Abs(end.X - start.X) == 2)
             {
                 Square rook_start;
                 Square rook_end;
 
-                if (Math.Abs(end.X - start.X) == 2)
+                if (end.X - start.X == 2)
                 {
                     rook_start = Square.NewUnchecked(7, start.Y);
                     rook_end = Square.NewUnchecked(5, start.Y);
@@ -179,19 +182,19 @@ public class Position
 
         Square s1 = Square.NewUnchecked(0, 0);
         if (end == s1 || start == s1)
-            this.castling.Item1 = false;
+            this.castling.Item2 = false;
 
         s1 = Square.NewUnchecked(7, 0);
         if (end == s1 || start == s1)
-            this.castling.Item2 = false;
+            this.castling.Item1 = false;
 
         s1 = Square.NewUnchecked(0, 7);
         if (end == s1 || start == s1)
-            this.castling.Item1 = false;
+            this.castling.Item4 = false;
 
         s1 = Square.NewUnchecked(7, 7);
         if (end == s1 || start == s1)
-            this.castling.Item2 = false;
+            this.castling.Item3 = false;
 
         this[end] = this[start];
         this[start] = null;
@@ -244,6 +247,7 @@ public class Position
         //
         // Console.WriteLine();
 
+
         List<Square> result = new List<Square>();
 
         foreach (Square move in moves)
@@ -278,9 +282,19 @@ public class Position
             if (kingSquare is null)
                 throw new Exception();
 
-            // Console.WriteLine($"kings position is {kingSquare}");
-
             bool canCaptureKing = false;
+            List<Square>? squaresToCheck = null;
+
+            if (p.type == PieceType.King)
+            {
+                if (Math.Abs(c.X - move.X) == 2)
+                {
+                    squaresToCheck = new List<Square>();
+
+                    squaresToCheck.Add(Square.NewUnchecked(c.X + (move.X - c.X) / 2, c.Y));
+                    squaresToCheck.Add(Square.NewUnchecked(c.X, c.Y));
+                }
+            }
 
             for (int i = 0; i < 8; i++)
             {
@@ -295,13 +309,22 @@ public class Position
 
                     List<Square> opponentMoves = clone.GetLegalMoves(s, false);
 
-                    // Console.WriteLine($"checking moves from {s} - {moves1.Contains(kingSquare)}");
-
                     if (opponentMoves.Contains(kingSquare))
                     {
                         canCaptureKing = true;
                         break;
                     }
+
+                    if (squaresToCheck is not null)
+                        foreach (Square squareToCheck in squaresToCheck)
+                            if (opponentMoves.Contains(squareToCheck))
+                            {
+                                canCaptureKing = true;
+                                break;
+                            }
+
+                    if (canCaptureKing)
+                        break;
                 }
 
                 if (canCaptureKing)
@@ -312,12 +335,12 @@ public class Position
                 result.Add(move);
         }
 
-        Console.WriteLine($"Deep legal moves from {c}: ");
+        // Console.WriteLine($"Deep legal moves from {c}: ");
 
-        foreach (Square move in moves)
-            Console.Write($"{move} ");
+        // foreach (Square move in moves)
+        //     Console.Write($"{move} ");
 
-        Console.WriteLine();
+        // Console.WriteLine();
 
         return result;
     }
@@ -375,7 +398,7 @@ public class Position
 
             for (int i = 0; i < 3; i++)
             {
-                Square s = Square.NewUnchecked(c.X + i + 1, c.Y);
+                Square s = Square.NewUnchecked(c.X - i - 1, c.Y);
                 Piece? p = this[s];
 
                 if (p is null)
@@ -385,7 +408,7 @@ public class Position
             }
 
             if (!hasObstacles)
-                result.Add(Square.NewUnchecked(c.X + 2, c.Y));
+                result.Add(Square.NewUnchecked(c.X - 2, c.Y));
         }
 
         return result;
@@ -537,7 +560,15 @@ public class Position
             Piece? p = this[move];
 
             if (move.X == c.X && p is null)
-                res.Add(move);
+            {
+                if (Math.Abs(move.Y - c.Y) == 1)
+                    res.Add(move);
+
+                Piece? p2 = this[c.X, c.Y + (move.Y - c.Y) / 2];
+
+                if (p2 is null)
+                    res.Add(move);
+            }
 
             if (move.X != c.X && p is not null && p.color != pawn.color)
                 res.Add(move);
@@ -733,12 +764,14 @@ public class Position
         return res;
     }
 
-    public int CountPossibleMoves(int depth)
+    public int CountPossibleMoves(int depth) => this.CountPossibleMoves(depth, depth);
+
+    public int CountPossibleMoves(int depth, int truedepth)
     {
         List<MoveCertain> possibleMoves = new List<MoveCertain>();
 
-        for (int i = 0; i < 8; i++)
         for (int j = 0; j < 8; j++)
+        for (int i = 0; i < 8; i++)
         {
             Square start = Square.NewUnchecked(i, j);
 
@@ -751,6 +784,10 @@ public class Position
                 possibleMoves.Add(move);
             }
         }
+
+        if (truedepth == 1)
+            foreach (MoveCertain move in possibleMoves)
+                Console.WriteLine($"{move.start}{move.end}");
 
         if (depth <= 1)
             return possibleMoves.Count;
@@ -766,7 +803,12 @@ public class Position
             if (m is null)
                 throw new Exception();
 
-            result += newpos.CountPossibleMoves(depth - 1);
+            int numberOfMoves = newpos.CountPossibleMoves(depth - 1, truedepth);
+
+            if (depth == truedepth)
+                Console.WriteLine($"{move.start}{move.end} - {numberOfMoves}");
+
+            result += numberOfMoves;
         }
 
         return result;
