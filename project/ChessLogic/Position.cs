@@ -732,6 +732,45 @@ public class Position
         res += $"Castling - {c.Item1}, {c.Item2}, {c.Item3}, {c.Item4}\n";
         return res;
     }
+
+    public int CountPossibleMoves(int depth)
+    {
+        List<MoveCertain> possibleMoves = new List<MoveCertain>();
+
+        for (int i = 0; i < 8; i++)
+        for (int j = 0; j < 8; j++)
+        {
+            Square start = Square.NewUnchecked(i, j);
+
+            List<Square> moves = this.GetLegalMoves(start);
+
+            foreach (Square end in moves)
+            {
+                MoveCertain move = new MoveCertain(start, end);
+
+                possibleMoves.Add(move);
+            }
+        }
+
+        if (depth <= 1)
+            return possibleMoves.Count;
+
+        int result = 0;
+
+        foreach (MoveCertain move in possibleMoves)
+        {
+            Position newpos = this.CreateACopy();
+
+            List<Move>? m = newpos.MakeAMove(move.start, move.end);
+
+            if (m is null)
+                throw new Exception();
+
+            result += newpos.CountPossibleMoves(depth - 1);
+        }
+
+        return result;
+    }
 }
 
 public struct Move
