@@ -75,39 +75,41 @@ class Board : Canvas
         this.PointerReleased += OnMouseReleased;
     }
 
-    public void RepositionPieces(List<Move> moves){
+    public void RepositionPieces(List<PieceMove> moves)
+    {
         List<PieceLabel> deletedPieces = new List<PieceLabel>();
 
-        foreach(Move move in moves){
+        foreach (PieceMove move in moves)
+        {
             Square? start = move.start;
             Square? end = move.end;
 
             Console.WriteLine($"moved from {start} to {end}");
 
-            if(end is not null && start is not null)
+            if (end is not null && start is not null)
             {
-                if(this.pieces[end.X, end.Y] is not null)
+                if (this.pieces[end.X, end.Y] is not null)
                     deletedPieces.Add(this.pieces[end.X, end.Y]);
 
                 this.pieces[end.X, end.Y] = this.pieces[start.X, start.Y];
 
-                if(this.pieces[end.X, end.Y] is not null)
+                if (this.pieces[end.X, end.Y] is not null)
                     this.pieces[end.X, end.Y].square = end;
 
                 this.pieces[start.X, start.Y] = null;
             }
-            else if(end is null && start is not null)
+            else if (end is null && start is not null)
             {
-                if(this.pieces[start.X, start.Y] is not null)
+                if (this.pieces[start.X, start.Y] is not null)
                     deletedPieces.Add(this.pieces[start.X, start.Y]);
 
                 this.pieces[start.X, start.Y] = null;
             }
-            else if(start is null && end is not null)
+            else if (start is null && end is not null)
             {
-                Piece? p1 = this.position[end] ;
+                Piece? p1 = this.position[end];
 
-                if(p1 is null)
+                if (p1 is null)
                 {
                     Console.WriteLine($"shouldnt happen 4 ");
                     return;
@@ -118,8 +120,9 @@ class Board : Canvas
             }
         }
 
-        foreach(PieceLabel? l in deletedPieces){
-            if(l is null)
+        foreach (PieceLabel? l in deletedPieces)
+        {
+            if (l is null)
                 continue;
 
             this.Children.Remove(l);
@@ -128,33 +131,34 @@ class Board : Canvas
         double boardSize = Math.Min(this.Bounds.Width, this.Bounds.Height);
         double squareSize = boardSize / 8;
 
-        for(int i = 0; i < 8; i++)
-        for(int j = 0; j < 8; j++)
+        for (int i = 0; i < 8; i++)
+        for (int j = 0; j < 8; j++)
         {
-            PieceLabel? l = this.pieces[i,j];
+            PieceLabel? l = this.pieces[i, j];
 
-            if(l is null)
+            if (l is null)
                 continue;
 
             Canvas.SetLeft(l, i * squareSize);
-            Canvas.SetTop(l, (7 - j)*squareSize);
+            Canvas.SetTop(l, (7 - j) * squareSize);
         }
     }
 
-    public void RedrawPieces(){
+    public void RedrawPieces()
+    {
         double boardSize = Math.Min(this.Bounds.Width, this.Bounds.Height);
         double squareSize = boardSize / 8;
 
-        for(int i = 0; i < 8; i++)
-        for(int j = 0; j < 8; j++)
+        for (int i = 0; i < 8; i++)
+        for (int j = 0; j < 8; j++)
         {
-            PieceLabel? l = this.pieces[i,j];
+            PieceLabel? l = this.pieces[i, j];
 
-            if(l is null)
+            if (l is null)
                 continue;
 
             Canvas.SetLeft(l, i * squareSize);
-            Canvas.SetTop(l, (7 - j)*squareSize);
+            Canvas.SetTop(l, (7 - j) * squareSize);
         }
     }
 
@@ -228,13 +232,15 @@ class Board : Canvas
         }
 
         Square? s = Square.New(i, j);
-        
-        if(s is null)
+
+        if (s is null)
             return;
 
         Piece? piece = this.position.GetPieceOnSquare(s);
 
-        Console.WriteLine($"pressed on square {s}, {piece}, currently selected {this.selectedSquare}");
+        Console.WriteLine(
+            $"pressed on square {s}, {piece}, currently selected {this.selectedSquare}"
+        );
 
         if (this.selectedSquare is null)
         {
@@ -263,24 +269,24 @@ class Board : Canvas
             return;
         }
 
-        List<Square> legalMoves = this.position.GetLegalMoves(this.selectedSquare);
+        List<Move> legalMoves = this.position.GetLegalMoves(this.selectedSquare);
         // bool isLegal = legalMoves.
 
-        if (!legalMoves.Contains(s))
+        if (!legalMoves.Contains(new Move(this.selectedSquare, s)))
         {
             Console.WriteLine($"trying to make an illegal move - {this.selectedSquare} {s}");
             return;
         }
 
-        List<Move>? moves = this.position.MakeAMove(this.selectedSquare, s);
+        List<PieceMove>? moves = this.position.MakeAMove(new Move(this.selectedSquare, s));
 
-        if(moves is null)
+        if (moves is null)
         {
             Console.WriteLine($"moves is null");
             return;
         }
-        
-        this.RepositionPieces((List<Move>)moves);
+
+        this.RepositionPieces((List<PieceMove>)moves);
 
         // foreach(Move move in moves){
         //     Square? start = move.start;
@@ -305,7 +311,7 @@ class Board : Canvas
         // }
 
         Console.WriteLine(this.position);
-        
+
         this.selectedSquare = null;
         // this.RepositionPieces();
 

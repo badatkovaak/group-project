@@ -1,19 +1,46 @@
 namespace ChessLogic;
 
-public class MoveCertain
+public class Move
 {
     public Square start;
     public Square end;
     public PieceType? promoteTo;
 
-    public MoveCertain(Square start, Square end, PieceType? promoteTo = null)
+    public Move(Square start, Square end, PieceType? promoteTo = null)
     {
         this.start = start;
         this.end = end;
         this.promoteTo = promoteTo;
     }
 
-    public static MoveCertain? StringToMove(Position position, string input)
+    public static bool operator ==(Move m1, Move m2)
+    {
+        return (m1.start == m2.start && m1.end == m2.end && m1.promoteTo == m2.promoteTo);
+    }
+
+    public static bool operator !=(Move m1, Move m2) => !(m1 == m2);
+
+    public static bool HaveSameEndpoints(Move m1, Move m2) => m1.end == m2.end;
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is null)
+            return false;
+
+        Move? m = obj as Move;
+
+        if (m is null)
+            return false;
+
+        return m == this;
+    }
+
+    public override string ToString()
+    {
+        return $"{this.start}{this.end}{(this.promoteTo is not null ? this.promoteTo : "")}";
+    }
+
+    public static Move? StringToMove(Position position, string input)
     {
         if (input[0] == '0')
         {
@@ -39,12 +66,14 @@ public class MoveCertain
             Square start1 = Square.NewUnchecked(4, start_y);
             Square end1 = Square.NewUnchecked(end_x, start_y);
 
-            List<Square> moves = position.GetLegalMoves(start1);
+            Move res = new Move(start1, end1);
 
-            if (!moves.Contains(end1))
+            List<Move> moves = position.GetLegalMoves(start1);
+
+            if (!moves.Contains(res))
                 return null;
 
-            return new MoveCertain(start1, end1);
+            return new Move(start1, end1);
         }
 
         PieceType? type = null;
@@ -84,13 +113,14 @@ public class MoveCertain
                 diff = -1;
 
             Square start1 = Square.NewUnchecked(end1.X, end1.Y + diff);
+            Move res = new Move(start1, end1);
 
-            List<Square> moves = position.GetLegalMoves(start1);
+            List<Move> moves = position.GetLegalMoves(start1);
 
-            if (!moves.Contains(end1))
+            if (!moves.Contains(res))
                 return null;
 
-            return new MoveCertain(start1, end1);
+            return new Move(start1, end1);
         }
 
         Square? end = Square.New(input.Substring(input.Length - 2));
@@ -137,12 +167,13 @@ public class MoveCertain
 
             Console.WriteLine($"{Square.NewUnchecked(i, j)} - {piece}, {i}, {j}");
 
-            List<Square> moves = position.GetLegalMoves(Square.NewUnchecked(i, j));
+            List<Move> moves = position.GetLegalMoves(Square.NewUnchecked(i, j));
+            Move m = new Move(Square.NewUnchecked(i, j), end);
 
-            foreach (Square move in moves)
+            foreach (Move move in moves)
                 Console.WriteLine(move);
 
-            if (!moves.Contains(end))
+            if (!moves.Contains(m))
                 continue;
 
             Console.WriteLine($"Contains {Square.NewUnchecked(i, j)} - {piece}, {start}");
@@ -191,6 +222,6 @@ public class MoveCertain
         if (start is null)
             return null;
 
-        return new MoveCertain(start, end);
+        return new Move(start, end);
     }
 }

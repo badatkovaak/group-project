@@ -8,6 +8,16 @@ public enum PieceType
     Pawn,
 }
 
-// private class PieceTypeFuncs{
-//     // public static List<PieceType>
-// }
+class PieceTypeUtils
+{
+    public static PieceType[] GetPromotableTypes()
+    {
+        return new PieceType[4]
+        {
+            PieceType.Queen,
+            PieceType.Rook,
+            PieceType.Bishop,
+            PieceType.Knight,
+        };
+    }
+}
