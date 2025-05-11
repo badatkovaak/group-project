@@ -11,20 +11,24 @@ namespace Chess;
 class Board : Canvas
 {
     const string default_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-    const double image_factor = 1;
+    const double imageFactor = 1;
+    const double boardMargin = 30;
 
     Position position;
 
-    // List<Rectangle> squares;
     Rectangle[,] squares;
     PieceLabel?[,] pieces;
-    Square? selectedSquare;
+    Shape?[,] HighlightedSquares;
 
-    // private List<Rectangle> highlightedSquares = new List<Rectangle>();
+    Square? selectedSquare;
+    Rectangle? selectedSquareHighlight;
 
     public Board(string fen = default_fen)
     {
-        this.Background = Brushes.Gray;
+        this.MinHeight = 200;
+        this.MinWidth = 200;
+
+        this.Background = new SolidColorBrush(new Avalonia.Media.Color(22, 21, 18, 1));
         Position? p = FEN.PositionFromFEN(fen);
 
         if (p is null)
@@ -35,18 +39,12 @@ class Board : Canvas
 
         this.squares = new Rectangle[8, 8];
         this.pieces = new PieceLabel[8, 8];
-
-        // double boardSize = Math.Min(this.Bounds.Height, this.Bounds.Width);
-        // double squareSize = boardSize / 8;
+        this.HighlightedSquares = new Rectangle[8, 8];
 
         for (int i = 0; i < 8; i++)
         for (int j = 0; j < 8; j++)
         {
             Rectangle r = new Rectangle();
-            r.Height = 10;
-            r.Width = 10;
-            Canvas.SetTop(r, 0);
-            Canvas.SetLeft(r, 0);
 
             if ((i + j) % 2 == 0)
                 r.Fill = Brushes.Beige;
@@ -66,6 +64,7 @@ class Board : Canvas
                 continue;
 
             PieceLabel label = new PieceLabel(piece, Square.NewUnchecked(i, j));
+            label.ZIndex = 2;
 
             this.pieces[i, j] = label;
             this.Children.Add(label);
@@ -73,6 +72,20 @@ class Board : Canvas
 
         this.EffectiveViewportChanged += OnDimensionsChange;
         this.PointerReleased += OnMouseReleased;
+    }
+
+    public SizeInfo CalculateSizeInfo(double margin)
+    {
+        double availableHeight = this.Bounds.Height - 2 * margin;
+        double availableWidth = this.Bounds.Width - 2 * margin;
+
+        double boardSize = Math.Min(availableHeight, availableWidth);
+        double cellSize = boardSize / 8;
+
+        double startX = margin + (availableWidth - boardSize) / 2;
+        double startY = margin + (availableHeight - boardSize) / 2;
+
+        return new SizeInfo(startX, startY, boardSize, cellSize);
     }
 
     public void RepositionPieces(List<PieceMove> moves)
@@ -128,8 +141,7 @@ class Board : Canvas
             this.Children.Remove(l);
         }
 
-        double boardSize = Math.Min(this.Bounds.Width, this.Bounds.Height);
-        double squareSize = boardSize / 8;
+        SizeInfo info = this.CalculateSizeInfo(Board.boardMargin);
 
         for (int i = 0; i < 8; i++)
         for (int j = 0; j < 8; j++)
@@ -139,8 +151,8 @@ class Board : Canvas
             if (l is null)
                 continue;
 
-            Canvas.SetLeft(l, i * squareSize);
-            Canvas.SetTop(l, (7 - j) * squareSize);
+            Canvas.SetLeft(l, info.boardStartX + i * info.cellSize);
+            Canvas.SetTop(l, info.boardStartY + (7 - j) * info.cellSize);
         }
     }
 
@@ -164,21 +176,20 @@ class Board : Canvas
 
     public void OnDimensionsChange(object? sender, EffectiveViewportChangedEventArgs e)
     {
-        double boardSize = Math.Min(this.Bounds.Height, this.Bounds.Width);
-        double squareSize = boardSize / 8;
+        SizeInfo info = this.CalculateSizeInfo(Board.boardMargin);
 
         Console.WriteLine(
-            $"boardSize - {boardSize}, squareSize - {squareSize}, Bounds - {this.Bounds.Height}, {this.Bounds.Width}"
+            $"boardSize - {info.boardSize}, squareSize - {info.cellSize}, Bounds - {this.Bounds.Height}, {this.Bounds.Width}"
         );
 
         for (int i = 0; i < 8; i++)
         for (int j = 0; j < 8; j++)
         {
             Rectangle r = this.squares[i, j];
-            r.Width = squareSize;
-            r.Height = squareSize;
-            Canvas.SetLeft(r, i * squareSize);
-            Canvas.SetTop(r, j * squareSize);
+            r.Width = info.cellSize;
+            r.Height = info.cellSize;
+            Canvas.SetLeft(r, info.boardStartX + i * info.cellSize);
+            Canvas.SetTop(r, info.boardStartY + j * info.cellSize);
         }
 
         for (int i = 0; i < 8; i++)
@@ -189,16 +200,16 @@ class Board : Canvas
             if (p is null)
                 continue;
 
-            Canvas.SetLeft(p, i * squareSize);
-            Canvas.SetTop(p, (7 - j) * squareSize);
+            Canvas.SetLeft(p, info.boardStartX + i * info.cellSize);
+            Canvas.SetTop(p, info.boardStartY + (7 - j) * info.cellSize);
 
             Image? image = p.Content as Image;
 
             if (image is null)
                 continue;
 
-            image.Height = squareSize * Board.image_factor;
-            image.Width = squareSize * Board.image_factor;
+            image.Height = info.cellSize * Board.imageFactor;
+            image.Width = info.cellSize * Board.imageFactor;
         }
     }
 
@@ -208,39 +219,27 @@ class Board : Canvas
             return;
 
         Point p = e.GetCurrentPoint(this).Position;
-        Console.WriteLine(p);
 
-        double boardSize = Math.Min(this.Bounds.Height, this.Bounds.Width);
-        double squareSize = boardSize / 8;
+        SizeInfo info = this.CalculateSizeInfo(Board.boardMargin);
 
-        double x = p.X;
-        int i = 0;
-
-        while (x >= squareSize)
-        {
-            x -= squareSize;
-            i++;
-        }
-
-        double y = p.Y;
-        int j = 7;
-
-        while (y >= squareSize)
-        {
-            y -= squareSize;
-            j--;
-        }
-
-        Square? s = Square.New(i, j);
+        Square? s = Board.CalculateSquareClicked(p, info);
 
         if (s is null)
+        {
+            this.selectedSquare = null;
+            Console.WriteLine("pressed outside the board");
             return;
+        }
 
         Piece? piece = this.position.GetPieceOnSquare(s);
 
         Console.WriteLine(
             $"pressed on square {s}, {piece}, currently selected {this.selectedSquare}"
         );
+
+        // List<Move> moves = this.position.GetLegalMoves(s);
+        List<Square> squares = this.position.GetLegalSquares(s);
+        this.HighlightSquares(info, squares);
 
         if (this.selectedSquare is null)
         {
@@ -270,7 +269,6 @@ class Board : Canvas
         }
 
         List<Move> legalMoves = this.position.GetLegalMoves(this.selectedSquare);
-        // bool isLegal = legalMoves.
 
         if (!legalMoves.Contains(new Move(this.selectedSquare, s)))
         {
@@ -278,296 +276,106 @@ class Board : Canvas
             return;
         }
 
-        List<PieceMove>? moves = this.position.MakeAMove(new Move(this.selectedSquare, s));
+        List<PieceMove>? pieceMoves = this.position.MakeAMove(new Move(this.selectedSquare, s));
 
-        if (moves is null)
+        if (pieceMoves is null)
         {
             Console.WriteLine($"moves is null");
             return;
         }
 
-        this.RepositionPieces((List<PieceMove>)moves);
-
-        // foreach(Move move in moves){
-        //     Square? start = move.start;
-        //     Square? end = move.end;
-        //
-        //     if(end is not null && start is not null)
-        //         this.pieces[end.X, end.Y] = this.pieces[start.X, start.Y];
-        //     else if(end is null && start is not null)
-        //         this.pieces[start.X, start.Y] = null;
-        //     else if(start is null && end is not null){
-        //         Piece? p1 = this.position[end] ;
-        //
-        //         if(p1 is null)
-        //         {
-        //             Console.WriteLine($"shouldnt happen 4 ");
-        //             return;
-        //         }
-        //
-        //         PieceLabel l = new PieceLabel(p1, end);
-        //         this.pieces[end.X, end.Y] = l;
-        //     }
-        // }
+        this.RepositionPieces((List<PieceMove>)pieceMoves);
 
         Console.WriteLine(this.position);
 
         this.selectedSquare = null;
-        // this.RepositionPieces();
-
         return;
     }
 
-    // public void OnMouseReleased(object? sender, PointerReleasedEventArgs e)
-    // {
-    //     //Console.WriteLine($"parent window - {(this.Parent as Grid).Parent as Window}");
-    //     // var result = PromotePawn(ChessInternals.Color.White, (this.Parent as Grid).Parent as Window);
-    //
-    //     if (e.InitialPressMouseButton != MouseButton.Left)
-    //         return;
-    //
-    //     Point p = e.GetCurrentPoint(this).Position;
-    //     Console.WriteLine(p);
-    //
-    //     double boardSize = Math.Min(this.Bounds.Height, this.Bounds.Width);
-    //     double squareSize = boardSize / 8;
-    //
-    //     double x = p.X;
-    //     int i = 0;
-    //
-    //     while (x >= squareSize)
-    //     {
-    //         x -= squareSize;
-    //         i++;
-    //     }
-    //
-    //     double y = p.Y;
-    //     int j = 7;
-    //
-    //     while (y >= squareSize)
-    //     {
-    //         y -= squareSize;
-    //         j--;
-    //     }
-    //
-    //     Square s = Square.NewUnchecked(i, j);
-    //     Piece? capturedPiece = this.position.GetPieceOnSquare(s);
-    //
-    //     if (selectedSquare is null)
-    //     {
-    //         if (capturedPiece is null)
-    //             return;
-    //
-    //         if (capturedPiece.color != this.position.colorToMove)
-    //         {
-    //             // this.selectedSquare = s;
-    //             // Console.WriteLine($"changed selected square to {s}");
-    //             return;
-    //         }
-    //
-    //         this.selectedSquare = s;
-    //         Console.WriteLine($"selected Square - {s}");
-    //         return;
-    //     }
-    //
-    //     if (this.selectedSquare is null)
-    //         throw new Exception();
-    //
-    //     if (this.selectedSquare.Equals(s))
-    //     {
-    //         this.selectedSquare = null;
-    //         // ClearHighlights();
-    //         Console.WriteLine("diselected square");
-    //         return;
-    //     }
-    //
-    //     if (capturedPiece is not null && capturedPiece.color == this.position.colorToMove)
-    //     {
-    //         this.selectedSquare = s;
-    //         Console.WriteLine($"changed selected square to {s}");
-    //         return;
-    //     }
-    //
-    //     if (capturedPiece is null || capturedPiece.color != this.position.colorToMove)
-    //     {
-    //         bool isLegal = this.position.GetLegalMoves(this.selectedSquare).Contains(s);
-    //
-    //         if (!isLegal)
-    //         {
-    //             this.selectedSquare = null;
-    //             // ClearHighlights();
-    //             Console.WriteLine($"trying to make an illegal move - {this.selectedSquare} {s}");
-    //             return;
-    //         }
-    //
-    //         Square start = this.selectedSquare;
-    //         Square end = s;
-    //
-    //         Console.WriteLine(this.position);
-    //
-    //         List<Move>? pos = this.position.MakeAMove(start, end);
-    //
-    //         if (pos is null)
-    //         {
-    //             Console.WriteLine("this should not happen");
-    //             return;
-    //         }
-    //
-    //         Console.WriteLine($"Made legal move - {start} {end}");
-    //
-    //         Console.WriteLine(this.position);
-    //
-    //         this.selectedSquare = null;
-    //         // ClearHighlights();
-    //
-    //         if (capturedPiece is not null)
-    //         {
-    //             PieceLabel? label = this.pieces[end.X, end.Y];
-    //
-    //             // foreach (PieceLabel l in this.pieces)
-    //             //     if (l.square.Equals(end))
-    //             //         label = l;
-    //
-    //             if (label is null)
-    //             {
-    //                 Console.WriteLine("should not happen");
-    //                 return;
-    //             }
-    //
-    //             this.pieces[end.X, end.Y] = null;
-    //             this.Children.Remove(label);
-    //         }
-    //
-    //         // for(int i = 0; i < 8; i++)
-    //         //     for(int j= 0; j < 8; j++){
-    //         //
-    //         PieceLabel? l = this.pieces[start.X, start.Y];
-    //
-    //         if (l is null)
-    //         {
-    //             Console.WriteLine("shouldnt happen 3");
-    //             return;
-    //         }
-    //
-    //         l.square = end;
-    //
-    //         Canvas.SetLeft(l, end.X * squareSize);
-    //         Canvas.SetTop(l, (7 - end.Y) * squareSize);
-    //
-    //         Image? image = l.Content as Image;
-    //
-    //         if (image is not null)
-    //         {
-    //             image.Height = squareSize * Board.image_factor;
-    //             image.Width = squareSize * Board.image_factor;
-    //         }
-    //     }
-    // }
+    private static Square? CalculateSquareClicked(Point p, SizeInfo info)
+    {
+        double x = p.X - info.boardStartX;
+        int i = 0;
 
-    // public void HighlightLegalMoves(Square s)
-    // {
-    //     ClearHighlights();
-    //
-    //     var legalMoves = this.position.GetLegalMoves(s);
-    //     double squareSize = this.Width / 8;
-    //
-    //     foreach (Square move in legalMoves)
-    //     {
-    //         Rectangle highlight = new Rectangle()
-    //         {
-    //             Width = squareSize,
-    //             Height = squareSize,
-    //             Fill = new SolidColorBrush(Colors.Yellow) { Opacity = 0.4 },
-    //             Stroke = Brushes.Gold,
-    //             StrokeThickness = 2,
-    //             IsHitTestVisible = false,
-    //         };
-    //
-    //         Canvas.SetLeft(highlight, move.X * squareSize);
-    //         Canvas.SetTop(highlight, (7 - move.Y) * squareSize);
-    //
-    //         this.highlightedSquares.Add(highlight);
-    //         this.Children.Add(highlight);
-    //
-    //         highlight.SetValue(Canvas.ZIndexProperty, 1);
-    //     }
-    //
-    //     foreach (var piece in this.pieces)
-    //     {
-    //         piece.SetValue(Canvas.ZIndexProperty, 2);
-    //     }}
+        while (x >= info.cellSize)
+        {
+            x -= info.cellSize;
+            i++;
+        }
 
-    // public void ClearHighlights()
-    // {
-    //     foreach (var highlight in highlightedSquares)
-    //     {
-    //         this.Children.Remove(highlight);
-    //     }
-    //
-    //     highlightedSquares.Clear();
-    // }
+        if (x < 0)
+            i = -1;
 
-    // public static async Task<Piece> PromotePawn(ChessLogic.Color pawnColor, Window parentWindow)
-    // {
-    //     var dialog = new PromotionChoiceWindow(pawnColor);
-    //     var chosenType = await dialog.ShowDialog<PieceType>(parentWindow);
-    //     return new Piece(chosenType, pawnColor);
-    // }
-    //
-    // public class PromotionChoiceWindow : Window
-    // {
-    //     public PieceType SelectedPiece { get; private set; }
-    //
-    //     public PromotionChoiceWindow(ChessLogic.Color pieceColor)
-    //     {
-    //         this.Title = "Choose promotion";
-    //         this.Width = 300;
-    //         this.Height = 100;
-    //
-    //         var panel = new StackPanel
-    //         {
-    //             Orientation = Orientation.Horizontal,
-    //             HorizontalAlignment = HorizontalAlignment.Center,
-    //             VerticalAlignment = VerticalAlignment.Center,
-    //             Spacing = 10,
-    //         };
-    //         var options = new[]
-    //         {
-    //             PieceType.Queen,
-    //             PieceType.Rook,
-    //             PieceType.Bishop,
-    //             PieceType.Knight,
-    //         };
-    //
-    //         foreach (var type in options)
-    //         {
-    //             var btn = new Button
-    //             {
-    //                 Content = GetPieceSymbol(type, pieceColor),
-    //                 Tag = type,
-    //                 FontSize = 20,
-    //                 Width = 50,
-    //                 Height = 50,
-    //             };
-    //             btn.Click += (s, e) =>
-    //             {
-    //                 SelectedPiece = (PieceType)btn.Tag;
-    //                 Close();
-    //             };
-    //             panel.Children.Add(btn);
-    //         }
-    //         this.Content = panel;
-    //     }
+        double y = p.Y - info.boardStartY;
+        int j = 7;
 
-    // private string GetPieceSymbol(PieceType type, ChessLogic.Color color)
-    // {
-    //     return type switch
-    //     {
-    //         PieceType.Queen => color == ChessLogic.Color.White ? "♕" : "♛",
-    //         PieceType.Rook => color == ChessLogic.Color.White ? "♖" : "♜",
-    //         PieceType.Bishop => color == ChessLogic.Color.White ? "♗" : "♝",
-    //         PieceType.Knight => color == ChessLogic.Color.White ? "♘" : "♞",
-    //         _ => "?",
-    //     };
-    // }
+        while (y >= info.cellSize)
+        {
+            y -= info.cellSize;
+            j--;
+        }
+
+        if (y < 0)
+            j = -1;
+
+        return Square.New(i, j);
+    }
+
+    private void HighlightSquares(SizeInfo info, Square s)
+    {
+        if (this.HighlightedSquares[s.X, s.Y] is not null)
+            return;
+
+        Shape r = Board.createHighlightSquare(s, info);
+        this.HighlightedSquares[s.X, s.Y] = r;
+    }
+
+    private void HighlightSquares(SizeInfo info, List<Square> squares)
+    {
+        foreach (Square s in squares)
+        {
+            if (this.HighlightedSquares[s.X, s.Y] is not null)
+                continue;
+
+            Shape r = Board.createHighlightSquare(s, info);
+            this.HighlightedSquares[s.X, s.Y] = r;
+            this.Children.Add(r);
+        }
+    }
+
+    // private static
+
+    private static Shape createHighlightSquare(Square s, SizeInfo info)
+    {
+        // Rectangle r = new Rectangle();
+        Ellipse r = new Ellipse();
+        r.Fill = Brushes.Olive;
+        r.Opacity = 0.7;
+        r.Height = info.cellSize;
+        r.Width = info.cellSize;
+
+        double x = info.boardStartX + s.X * info.cellSize;
+        double y = info.boardStartY + (7 - s.Y) * info.cellSize;
+
+        Canvas.SetLeft(r, x);
+        Canvas.SetTop(r, y);
+
+        return r;
+    }
+}
+
+public struct SizeInfo
+{
+    public readonly double boardStartX;
+    public readonly double boardStartY;
+    public readonly double boardSize;
+    public readonly double cellSize;
+
+    public SizeInfo(double startX, double startY, double boardSize, double cellSize)
+    {
+        this.boardStartX = startX;
+        this.boardStartY = startY;
+        this.boardSize = boardSize;
+        this.cellSize = cellSize;
+    }
 }

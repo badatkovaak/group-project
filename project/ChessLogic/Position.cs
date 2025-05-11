@@ -770,6 +770,22 @@ public class Position
         return (Position)p;
     }
 
+    public List<Square> GetLegalSquares(Square c)
+    {
+        List<Square> result = new List<Square>();
+        List<Move> moves = this.GetLegalMoves(c);
+
+        foreach (Move move in moves)
+        {
+            Square end = move.end;
+
+            if (!result.Contains(end))
+                result.Add(end);
+        }
+
+        return result;
+    }
+
     public override string ToString()
     {
         string res = "";

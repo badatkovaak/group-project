@@ -9,15 +9,15 @@ public class MainWindow : Window
     {
         this.Title = "Chess";
 
-        this.MinWidth = 100;
-        this.MinHeight = 100;
+        this.MinWidth = 200;
+        this.MinHeight = 200;
 
         Grid maingrid = new Grid();
         maingrid.HorizontalAlignment = HorizontalAlignment.Stretch;
         maingrid.VerticalAlignment = VerticalAlignment.Stretch;
 
         maingrid.RowDefinitions.Add(new RowDefinition(1, GridUnitType.Star));
-        maingrid.RowDefinitions.Add(new RowDefinition(1, GridUnitType.Auto));
+        // maingrid.RowDefinitions.Add(new RowDefinition(1, GridUnitType.Auto));
 
         Board board = new Board();
 
@@ -27,11 +27,11 @@ public class MainWindow : Window
         Grid.SetRow(board, 0);
         maingrid.Children.Add(board);
 
-        TextBlock text = new TextBlock();
-        text.Text = "Hi Mom !";
+        // TextBlock text = new TextBlock();
+        // text.Text = "Hi Mom !";
 
-        Grid.SetRow(text, 1);
-        maingrid.Children.Add(text);
+        // Grid.SetRow(text, 1);
+        // maingrid.Children.Add(text);
 
         this.Content = maingrid;
 
