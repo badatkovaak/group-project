@@ -55,6 +55,19 @@ class Board : Canvas
             this.Children.Add(r);
         }
 
+        PromotionChoice promotion = new PromotionChoice(Color.White, 100);
+        Canvas.SetTop(promotion, 0);
+        Canvas.SetBottom(promotion, 0);
+        this.Children.Add(promotion);
+
+        this.InitPieceLabels();
+
+        this.EffectiveViewportChanged += OnDimensionsChange;
+        this.PointerReleased += OnMouseReleased;
+    }
+
+    private void InitPieceLabels()
+    {
         for (int i = 0; i < 8; i++)
         for (int j = 0; j < 8; j++)
         {
@@ -69,9 +82,20 @@ class Board : Canvas
             this.pieces[i, j] = label;
             this.Children.Add(label);
         }
+    }
 
-        this.EffectiveViewportChanged += OnDimensionsChange;
-        this.PointerReleased += OnMouseReleased;
+    private void DeInitPieceLabels()
+    {
+        for (int i = 0; i < 8; i++)
+        for (int j = 0; j < 8; j++)
+        {
+            PieceLabel? label = this.pieces[i, j];
+
+            if (label is null)
+                continue;
+
+            this.Children.Remove(label);
+        }
     }
 
     public SizeInfo CalculateSizeInfo(double margin)
@@ -239,7 +263,7 @@ class Board : Canvas
 
         // List<Move> moves = this.position.GetLegalMoves(s);
         List<Square> squares = this.position.GetLegalSquares(s);
-        this.HighlightSquares(info, squares);
+        // this.HighlightSquares(info, squares);
 
         if (this.selectedSquare is null)
         {
@@ -343,11 +367,8 @@ class Board : Canvas
         }
     }
 
-    // private static
-
     private static Shape createHighlightSquare(Square s, SizeInfo info)
     {
-        // Rectangle r = new Rectangle();
         Ellipse r = new Ellipse();
         r.Fill = Brushes.Olive;
         r.Opacity = 0.7;
@@ -361,6 +382,14 @@ class Board : Canvas
         Canvas.SetTop(r, y);
 
         return r;
+    }
+
+    public void ChangePosition(Position newPos)
+    {
+        this.position = newPos;
+        this.DeInitPieceLabels();
+        this.InitPieceLabels();
+        this.OnDimensionsChange(null, new EffectiveViewportChangedEventArgs(this.Bounds));
     }
 }
 
