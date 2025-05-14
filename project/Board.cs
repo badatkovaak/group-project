@@ -10,7 +10,7 @@ namespace Chess;
 
 class Board : Canvas
 {
-    const string default_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    public const string default_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     const double imageFactor = 1;
     const double boardMargin = 30;
 
@@ -54,11 +54,6 @@ class Board : Canvas
             this.squares[i, j] = r;
             this.Children.Add(r);
         }
-
-        PromotionChoice promotion = new PromotionChoice(Color.White, 100);
-        Canvas.SetTop(promotion, 0);
-        Canvas.SetBottom(promotion, 0);
-        this.Children.Add(promotion);
 
         this.InitPieceLabels();
 
@@ -144,6 +139,12 @@ class Board : Canvas
             }
             else if (start is null && end is not null)
             {
+                // if(this.pieces[start.X, start.Y] is not null)
+                //     deletedPieces.Add(this.pieces[start.X, start.Y]);
+
+                if (this.pieces[end.X, end.Y] is not null)
+                    deletedPieces.Add(this.pieces[end.X, end.Y]);
+
                 Piece? p1 = this.position[end];
 
                 if (p1 is null)
@@ -154,6 +155,7 @@ class Board : Canvas
 
                 PieceLabel l = new PieceLabel(p1, end);
                 this.pieces[end.X, end.Y] = l;
+                this.Children.Add(l);
             }
         }
 
@@ -293,14 +295,39 @@ class Board : Canvas
         }
 
         List<Move> legalMoves = this.position.GetLegalMoves(this.selectedSquare);
+        Move attemptedMove = new Move(this.selectedSquare, s);
 
-        if (!legalMoves.Contains(new Move(this.selectedSquare, s)))
+        if (!legalMoves.Contains(attemptedMove))
         {
-            Console.WriteLine($"trying to make an illegal move - {this.selectedSquare} {s}");
-            return;
+            bool shouldReturn = true;
+
+            foreach(Move move in legalMoves)
+            {
+                if (move.start != attemptedMove.start)
+                    continue;
+
+                if (move.end != attemptedMove.end)
+                    continue;
+
+                if (move.promoteTo is null)
+                    throw new Exception();
+                
+                double point_x = info.boardStartX + attemptedMove.end.X * info.cellSize;
+                double point_y = info.boardStartY + (7 - attemptedMove.end.Y) * info.cellSize;
+                Point point = new Point(point_x, point_y);
+                PieceType promoteTo = this.GetPromotionType(info, point);
+                attemptedMove.promoteTo = promoteTo;
+                shouldReturn = false;
+            }
+            
+            if(shouldReturn)
+            {
+                Console.WriteLine($"trying to make an illegal move - {this.selectedSquare} {s}");
+                return;
+            }
         }
 
-        List<PieceMove>? pieceMoves = this.position.MakeAMove(new Move(this.selectedSquare, s));
+        List<PieceMove>? pieceMoves = this.position.MakeAMove(attemptedMove);
 
         if (pieceMoves is null)
         {
@@ -308,9 +335,11 @@ class Board : Canvas
             return;
         }
 
-        this.RepositionPieces((List<PieceMove>)pieceMoves);
-
         Console.WriteLine(this.position);
+
+        this.RepositionPieces((List<PieceMove>)pieceMoves);
+        this.RedrawPieces();
+        this.OnDimensionsChange(null, new EffectiveViewportChangedEventArgs(this.Bounds));
 
         this.selectedSquare = null;
         return;
@@ -390,6 +419,21 @@ class Board : Canvas
         this.DeInitPieceLabels();
         this.InitPieceLabels();
         this.OnDimensionsChange(null, new EffectiveViewportChangedEventArgs(this.Bounds));
+    }
+
+    public PieceType GetPromotionType(SizeInfo info, Point p){
+        PromotionChoice pc = new PromotionChoice(this.position.colorToMove, info.cellSize);
+        
+        Canvas.SetLeft(pc, p.X);
+        Canvas.SetTop(pc, p.Y);
+
+        this.Children.Add(pc);
+
+        // while(pc.chosenType is null)
+        //     Task.Delay(50).Wait();
+            // System.Threading.Thread.Sleep(50);
+
+        return PieceType.Queen;
     }
 }
 

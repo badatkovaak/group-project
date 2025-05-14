@@ -39,7 +39,8 @@ public class MainWindow : Window
         Grid.SetRow(text1, 1);
 
         TextBox text2 = new TextBox();
-        text2.Text = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        // text2.Text = Board.default_fen;
+        text2.Text = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
         text2.TextChanged += OnTextChanged;
         this.fenInputBox = text2;
 
@@ -47,21 +48,16 @@ public class MainWindow : Window
         maingrid.Children.Add(text2);
 
         this.Content = maingrid;
-
-        // this.SizeChanged += (sender, e) =>
-        // {
-        //     double availableHeight = maingrid.Bounds.Height - text.Bounds.Height;
-        //     double availableWidth = maingrid.Bounds.Width;
-        //     double boardSize = Math.Min(availableWidth, availableHeight);
-        //     board.Resize(boardSize);
-        // };
     }
 
     public void OnTextChanged(object? sender, TextChangedEventArgs e)
     {
+        if(this.fenInputBox.Text.Trim() == Board.default_fen)
+            return;
+
         Console.WriteLine($"input changed to - {this.fenInputBox.Text}");
 
-        Position? res = ChessLogic.FEN.PositionFromFEN(this.fenInputBox.Text);
+        Position? res = ChessLogic.FEN.PositionFromFEN(this.fenInputBox.Text.Trim());
 
         if (res is null)
         {
